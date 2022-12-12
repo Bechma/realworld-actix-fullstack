@@ -1,0 +1,46 @@
+{% extends "layout.j2" %}
+{% block title %}
+Profile settings
+{% endblock title %}
+
+{% block content %}
+<div class="settings-page">
+    <div class="container page">
+        <div class="row">
+            <div class="col-md-6 offset-md-3 col-xs-12">
+                <h1 class="text-xs-center">Your Settings</h1>
+
+                <form action="{{routes['settings']}}" method="post" name="form_data">
+                    <fieldset>
+                        <fieldset class="form-group">
+                            <input name="image" value="{{user.image}}" class="form-control" type="text"
+                                placeholder="URL of profile picture" />
+                        </fieldset>
+                        <fieldset class="form-group">
+                            <input disabled value="{{username}}" class="form-control form-control-lg" type="text"
+                                placeholder="Your Name" />
+                        </fieldset>
+                        <fieldset class="form-group">
+                            <textarea name="bio" class="form-control form-control-lg" rows="8"
+                                placeholder="Short bio about you">{{user.bio}}</textarea>
+                        </fieldset>
+                        <fieldset class="form-group">
+                            <input name="email" value="{{user.email}}" class="form-control form-control-lg" type="text"
+                                placeholder="Email" />
+                        </fieldset>
+                        <fieldset class="form-group">
+                            <input name="password" class="form-control form-control-lg" type="password"
+                                placeholder="Password" />
+                            <input name="confirmPassword" class="form-control form-control-lg" type="password"
+                                placeholder="Confirm Password" />
+                        </fieldset>
+                        <button class="btn btn-lg btn-primary pull-xs-right" type="submit">Update Settings</button>
+                    </fieldset>
+                </form>
+                <hr />
+                <a href="{{routes['logout']}}" class="btn btn-outline-danger">Or click here to logout.</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,52 @@
+{% import "components/articles_macros.j2" as macros %}
+{% extends "layout.j2" %}
+{% block title %}
+{{user.username}} profile
+{% endblock title %}
+
+{% block content %}
+<div class="profile-page">
+    <div class="user-info">
+        <div class="container">
+            <div class="row">
+                <div class="col-xs-12 col-md-10 offset-md-1">
+                    <img src="{{user.image}}" class="user-img" />
+                    <h4>{{user.username}}</h4>
+                    <p>{% if user.bio %}{{user.bio}}{% else %}No bio available{% endif %}</p>
+                    {% if username and username != user.username%}
+                    <button class="btn btn-sm btn-outline-secondary action-btn">
+                        <i class="ion-plus-round"></i>
+                        &nbsp; Follow {{user.username}}
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12 col-md-10 offset-md-1">
+                <div class="articles-toggle">
+                    <ul class="nav nav-pills outline-active">
+                        <li class="nav-item">
+                            <a class="nav-link {% if not favourites %}active{% endif %}"
+                                href="{{current}}">{{user.username}}'s Articles</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if favourites %}active{% endif %}"
+                                href="{{current ~ '?favourites=true'}}">Favorited Articles</a>
+                        </li>
+                    </ul>
+                </div>
+
+                {% for a in articles %}
+                <div class="article-preview">
+                    {{macros::preview(article=a)}}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

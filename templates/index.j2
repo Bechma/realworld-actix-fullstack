@@ -1,0 +1,53 @@
+{% import "components/articles_macros.j2" as macros %}
+
+{% extends "layout.j2" %}
+{% block title %}
+Conduit
+{% endblock title %}
+
+{% block content %}
+<div class="home-page">
+    <div class="banner">
+        <div class="container">
+            <h1 class="logo-font">conduit</h1>
+            <p>A place to share your knowledge.</p>
+        </div>
+    </div>
+
+    <div class="container page">
+        <div class="row">
+            <div class="col-md-9">
+                <div class="feed-toggle">
+                    <ul class="nav nav-pills outline-active">
+                        <li class="nav-item">
+                            <a class="nav-link{% if not username %} disabled{% endif %}"
+                                href="{{routes['index'] ~ '?myfeed=true'}}">Your Feed</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{routes['index']}}">Global Feed</a>
+                        </li>
+                    </ul>
+                </div>
+
+                {% for a in articles %}
+                <div class="article-preview">
+                    {{macros::preview(article=a)}}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="col-md-3">
+                <div class="sidebar">
+                    <p>Popular Tags</p>
+
+                    <div class="tag-list">
+                        {% for t in tags %}
+                        <a href="{{routes['index'] ~ '?tag=' ~ t}}" class="tag-pill tag-default">{{t}}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

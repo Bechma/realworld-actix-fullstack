@@ -1,0 +1,34 @@
+{% macro preview(article) %}
+<div class="article-preview">
+    {{self::metadata(article=article, is_preview=true)}}
+    <a href="{{routes['article'] ~ '/' ~ article.slug}}" class="preview-link">
+        <h1>{{article.title}}</h1>
+        <p>{{article.description}}</p>
+        <span>Read more...</span>
+    </a>
+</div>
+{% endmacro preview %}
+
+{% macro metadata(article, is_preview) %}
+<div class="article-meta">
+    <a href="{{routes['profile'] ~ '/' ~ article.author.username}}"><img src="{{article.author.image}}" /></a>
+    <div class="info">
+        <a href="{{routes['profile'] ~ '/' ~ article.author.username}}" class="author">{{article.author.username}}</a>
+        <span class="date">{{article.createdAt}}</span>
+    </div>
+    {% if is_preview %}
+    <button class="btn btn-outline-primary btn-sm pull-xs-right"><i class="ion-heart"></i>
+        {{article.favoritesCount}}</button>
+    {% else %}
+    {% if username == article.author.username %}
+    <a class="btn btn-sm btn-outline-secondary" href="{{routes['editor'] ~ '/' ~ article.slug}}"><i
+            class="ion-compose"></i> Edit article</a>
+    {% else %}
+    <button class="btn btn-sm btn-outline-secondary"><i class="ion-plus-round"></i> Follow
+        {{article.author.username}}</button>
+    {% endif %}
+    <button class="btn btn-sm btn-outline-primary"><i class="ion-heart"></i> Favorite Post <span
+            class="counter">({{article.favoritesCount}})</span></button>
+    {% endif %}
+</div>
+{% endmacro metadata %}
