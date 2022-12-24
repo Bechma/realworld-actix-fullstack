@@ -17,17 +17,24 @@ pub async fn article(
     pool: web::Data<sqlx::PgPool>,
 ) -> impl Responder {
     let mut conn = pool.acquire().await.unwrap();
-    let Ok(article) = get_article(&mut conn, &path_params.slug).await else {
+    let username = crate::auth::get_session_username(&session);
+    let Ok(article) = get_article(&mut conn, &path_params.slug, username.clone().unwrap_or_default()).await else {
         return HttpResponse::NotFound().finish();
     };
     let mut context = tera::Context::new();
     context.insert("article", &article);
-    if let Some(username) = crate::auth::get_session_username(&session) {
-        let user = sqlx::query_as!(
-            User,
+    if let Some(username) = username {
+        let user = sqlx::query!(
             "SELECT username, email, bio, image FROM Users WHERE username=$1",
             username
         )
+        .map(|x| User {
+            username: x.username,
+            email: x.email,
+            bio: x.bio,
+            image: x.image,
+            following: false,
+        })
         .fetch_optional(&mut conn)
         .await
         .unwrap();
@@ -43,6 +50,7 @@ pub async fn article(
 async fn get_article(
     conn: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
     slug: &str,
+    username: String,
 ) -> Result<ArticleFull, sqlx::Error> {
     sqlx::query!(
         "
@@ -50,12 +58,15 @@ SELECT
     a.*,
     (SELECT string_agg(tag, ' ') FROM ArticleTags WHERE article = a.slug) as tag_list,
     (SELECT COUNT(*) FROM FavArticles WHERE article = a.slug) as fav_count,
-    u.*
+    u.*,
+    EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$2) as fav,
+    EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=a.author) as following
 FROM Articles a
     JOIN Users u ON a.author = u.username
 WHERE slug = $1
 ",
-        slug
+        slug,
+        username,
     )
     .map(|x| ArticleFull {
         slug: x.slug,
@@ -70,11 +81,13 @@ WHERE slug = $1
             .collect::<Vec<_>>(),
         favorites_count: x.fav_count.unwrap(),
         created_at: x.created_at.format("%d/%m/%Y %H:%M").to_string(),
+        fav: x.fav.unwrap_or_default(),
         author: User {
             username: x.username,
             email: x.email,
             bio: x.bio,
             image: x.image,
+            following: x.following.unwrap_or_default(),
         },
     })
     .fetch_one(conn)
@@ -126,6 +139,66 @@ pub async fn article_delete(
         .insert_header((
             actix_web::http::header::LOCATION,
             ROUTES["index"].to_string(),
+        ))
+        .finish()
+}
+
+pub async fn article_add_favorite(
+    session: actix_session::Session,
+    path_params: web::Path<PathInfo>,
+    request: actix_web::HttpRequest,
+    pool: web::Data<sqlx::PgPool>,
+) -> impl Responder {
+    if let Some(username) = crate::auth::get_session_username(&session) {
+        let mut conn = pool.acquire().await.unwrap();
+        sqlx::query!(
+            "INSERT INTO FavArticles(article, username) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+            path_params.slug,
+            username,
+        )
+        .execute(&mut conn)
+        .await
+        .unwrap();
+    }
+
+    HttpResponse::build(StatusCode::FOUND)
+        .insert_header((
+            actix_web::http::header::LOCATION,
+            request
+                .headers()
+                .get(actix_web::http::header::REFERER)
+                .map(|x| x.to_str().unwrap().to_string())
+                .unwrap_or_else(|| ROUTES["article"].to_string() + "/" + path_params.slug.as_str()),
+        ))
+        .finish()
+}
+
+pub async fn article_del_favorite(
+    session: actix_session::Session,
+    path_params: web::Path<PathInfo>,
+    request: actix_web::HttpRequest,
+    pool: web::Data<sqlx::PgPool>,
+) -> impl Responder {
+    if let Some(username) = crate::auth::get_session_username(&session) {
+        let mut conn = pool.acquire().await.unwrap();
+        sqlx::query!(
+            "DELETE FROM FavArticles WHERE article=$1 and username=$2",
+            path_params.slug,
+            username,
+        )
+        .execute(&mut conn)
+        .await
+        .unwrap();
+    }
+
+    HttpResponse::build(StatusCode::FOUND)
+        .insert_header((
+            actix_web::http::header::LOCATION,
+            request
+                .headers()
+                .get(actix_web::http::header::REFERER)
+                .map(|x| x.to_str().unwrap().to_string())
+                .unwrap_or_else(|| ROUTES["article"].to_string() + "/" + path_params.slug.as_str()),
         ))
         .finish()
 }

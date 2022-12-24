@@ -20,11 +20,12 @@ Conduit
                 <div class="feed-toggle">
                     <ul class="nav nav-pills outline-active">
                         <li class="nav-item">
-                            <a class="nav-link{% if not username %} disabled{% endif %}"
+                            <a class="nav-link{% if not username %} disabled{% elif myfeed %} active{% endif %}"
                                 href="{{routes['index'] ~ '?myfeed=true'}}">Your Feed</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link active" href="{{routes['index']}}">Global Feed</a>
+                            <a class="nav-link{% if not myfeed %} active{% endif %}" href="{{routes['index']}}">Global
+                                Feed</a>
                         </li>
                     </ul>
                 </div>

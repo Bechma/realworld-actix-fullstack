@@ -20,6 +20,7 @@ pub async fn settings_get(
             email: x.email,
             bio: x.bio,
             image: x.image,
+            following: false,
         })
         .fetch_one(&mut conn)
         .await
@@ -58,6 +59,7 @@ pub async fn settings_post(
                     email: form_data.email.to_string(),
                     bio: Some(form_data.bio.to_string()),
                     image: Some(form_data.image.to_string()),
+                    following: false,
                 };
                 context.insert("user", &user);
                 return crate::template::render_template("settings.j2", session, &mut context);

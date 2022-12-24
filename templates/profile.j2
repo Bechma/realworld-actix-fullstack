@@ -1,4 +1,5 @@
 {% import "components/articles_macros.j2" as macros %}
+{% import "components/buttons.j2" as buttons %}
 {% extends "layout.j2" %}
 {% block title %}
 {{user.username}} profile
@@ -13,12 +14,7 @@
                     <img src="{{user.image}}" class="user-img" />
                     <h4>{{user.username}}</h4>
                     <p>{% if user.bio %}{{user.bio}}{% else %}No bio available{% endif %}</p>
-                    {% if username and username != user.username%}
-                    <button class="btn btn-sm btn-outline-secondary action-btn">
-                        <i class="ion-plus-round"></i>
-                        &nbsp; Follow {{user.username}}
-                    </button>
-                    {% endif %}
+                    {{buttons::follow(user=user.username, following=user.following)}}
                 </div>
             </div>
         </div>
@@ -35,7 +31,7 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if favourites %}active{% endif %}"
-                                href="{{current ~ '?favourites=true'}}">Favorited Articles</a>
+                                href="{{current}}?favourites=true">Favorited Articles</a>
                         </li>
                     </ul>
                 </div>

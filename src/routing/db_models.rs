@@ -6,6 +6,7 @@ pub struct User {
     pub email: String,
     pub bio: Option<String>,
     pub image: Option<String>,
+    pub following: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -16,6 +17,7 @@ pub struct ArticlePreview {
     pub created_at: String,
     pub favorites_count: Option<i64>,
     pub author: User,
+    pub fav: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -28,6 +30,7 @@ pub struct ArticleFull {
     pub favorites_count: i64,
     pub tag_list: Vec<String>,
     pub author: User,
+    pub fav: bool,
 }
 
 #[derive(Serialize, Deserialize, Default)]

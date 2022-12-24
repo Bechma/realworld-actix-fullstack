@@ -1,3 +1,5 @@
+{% import "components/buttons.j2" as buttons %}
+
 {% macro preview(article) %}
 <div class="article-preview">
     {{self::metadata(article=article, is_preview=true)}}
@@ -17,10 +19,8 @@
         <span class="date">{{article.created_at}}</span>
     </div>
     {% if is_preview %}
-    <button class="btn btn-outline-primary btn-sm pull-xs-right"><i class="ion-heart"></i>
-        {{article.favorites_count}}</button>
-    {% else %}
-    {% if username and username == article.author.username %}
+    {{buttons::fav(article=article)}}
+    {% elif username and username == article.author.username %}
     <a class="btn btn-sm btn-outline-secondary" href="{{routes['editor'] ~ '/' ~ article.slug}}"><i
             class="ion-compose"></i> Edit article</a>
     <form method="post" action="{{routes['article'] ~ '/' ~ article.slug ~ '/delete'}}" style="display: inline-block;">
@@ -28,11 +28,9 @@
             article</button>
     </form>
     {% elif username %}
-    <button class="btn btn-sm btn-outline-secondary"><i class="ion-plus-round"></i> Follow
-        {{article.author.username}}</button>
-    <button class="btn btn-sm btn-outline-primary"><i class="ion-heart"></i> Favorite Post <span
-            class="counter">({{article.favorites_count}})</span></button>
-    {% endif %}
+    {{buttons::follow(user=article.author.username, following=article.author.following)}}
+    {{buttons::fav(article=article)}}
+    </form>
     {% endif %}
 </div>
 {% endmacro metadata %}

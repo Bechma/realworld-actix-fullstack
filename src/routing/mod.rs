@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-use self::article::{article, article_delete};
+use self::article::{article, article_add_favorite, article_del_favorite, article_delete};
 use self::comments::{comments_create, comments_delete};
 use self::editor::{editor_get, editor_post};
 use self::index::index;
 use self::login::{login_get, login_post};
 use self::logout::logout;
-use self::profile::user_profile;
+use self::profile::{follower_down, follower_up, user_profile};
 use self::register::{register_get, register_post};
 use self::settings::{settings_get, settings_post};
 use actix_web::web;
@@ -55,6 +55,14 @@ pub fn apply_routes(cfg: &mut web::ServiceConfig) {
             &(ROUTES["article"].to_string() + "/{slug}/comments/{id}"),
             web::post().to(comments_delete),
         )
+        .route(
+            &(ROUTES["article"].to_string() + "/{slug}/fav"),
+            web::post().to(article_add_favorite),
+        )
+        .route(
+            &(ROUTES["article"].to_string() + "/{slug}/unfav"),
+            web::post().to(article_del_favorite),
+        )
         .route(&ROUTES["logout"], web::get().to(logout))
         .route(&ROUTES["logout"], web::post().to(logout))
         .route(&ROUTES["login"], web::get().to(login_get))
@@ -76,5 +84,13 @@ pub fn apply_routes(cfg: &mut web::ServiceConfig) {
         .route(
             &(ROUTES["profile"].to_string() + "/{username}"),
             web::get().to(user_profile),
+        )
+        .route(
+            &(ROUTES["profile"].to_string() + "/{username}/follow"),
+            web::post().to(follower_up),
+        )
+        .route(
+            &(ROUTES["profile"].to_string() + "/{username}/unfollow"),
+            web::post().to(follower_down),
         );
 }

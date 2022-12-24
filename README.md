@@ -5,9 +5,9 @@ WIP
 TODO:
 - [x] Implement commenting section
 - [x] Buttons to Edit/Remove your articles
-- [ ] Fav/Unfav article
-- [ ] Follow/Unfollow users
-- [ ] "Your feed" works
+- [x] Fav/Unfav article
+- [x] Follow/Unfollow users
+- [x] "Your feed" works
 - [ ] Improve error handling
 - [ ] Write some unit tests
 - [ ] Write some functional tests

@@ -20,7 +20,7 @@
             <ul class="nav navbar-nav pull-xs-right">
                 <li class="nav-item">
                     <a class="nav-link{% if current == routes['index'] %} active{% endif %}"
-                        href="{{routes['index']}}">Home</a>
+                        href="{{routes['index']}}"><i class="ion-home"></i>&nbsp;Home</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link{% if current == routes['editor'] %} active{% endif %}"
@@ -38,16 +38,15 @@
                 {% set profile_path = routes['profile'] ~ '/' ~ username -%}
                 <li class="nav-item">
                     <a class="nav-link{% if current == profile_path %} active{% endif %}" href="{{profile_path}}"><i
-                            class="ion-person"></i> My
-                        Profile</a>
+                            class="ion-person"></i> {{username}}</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{routes['logout']}}">Logout</a>
+                    <a class="nav-link" href="{{routes['logout']}}"><i class="ion-log-out"></i>&nbsp;Logout</a>
                 </li>
                 {% else %}
                 <li class="nav-item">
                     <a class="nav-link{% if current == routes['login'] %} active{% endif %}"
-                        href="{{routes['login']}}">Sign in</a>
+                        href="{{routes['login']}}"><i class="ion-log-in"></i> Sign in</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link{% if current == routes['register'] %} active{% endif %}"

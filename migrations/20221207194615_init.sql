@@ -7,9 +7,9 @@ CREATE TABLE IF NOT EXISTS Users (
 );
 
 CREATE TABLE IF NOT EXISTS Follows (
-    follows text NOT NULL REFERENCES Users(username) ON DELETE CASCADE ON UPDATE CASCADE,
+    follower text NOT NULL REFERENCES Users(username) ON DELETE CASCADE ON UPDATE CASCADE,
     influencer text NOT NULL REFERENCES Users(username) ON DELETE CASCADE ON UPDATE CASCADE,
-    PRIMARY KEY (follows, influencer)
+    PRIMARY KEY (follower, influencer)
 );
 
 CREATE TABLE IF NOT EXISTS Articles (
