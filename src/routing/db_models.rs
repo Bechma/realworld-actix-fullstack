@@ -9,7 +9,6 @@ pub struct User {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct ArticlePreview {
     pub slug: String,
     pub title: String,
@@ -20,7 +19,6 @@ pub struct ArticlePreview {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct ArticleFull {
     pub slug: String,
     pub title: String,
@@ -33,7 +31,6 @@ pub struct ArticleFull {
 }
 
 #[derive(Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct ArticleEdit {
     pub slug: String,
     pub title: String,
@@ -41,4 +38,15 @@ pub struct ArticleEdit {
     pub body: String,
     pub tag_list: String,
     pub author: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Comments {
+    pub id: i32,
+    pub article: String,
+    pub username: String,
+    pub body: String,
+    pub created_at: String,
+    pub user_image: String,
+    pub user_link: String,
 }

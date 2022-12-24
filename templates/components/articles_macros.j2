@@ -14,21 +14,25 @@
     <a href="{{routes['profile'] ~ '/' ~ article.author.username}}"><img src="{{article.author.image}}" /></a>
     <div class="info">
         <a href="{{routes['profile'] ~ '/' ~ article.author.username}}" class="author">{{article.author.username}}</a>
-        <span class="date">{{article.createdAt}}</span>
+        <span class="date">{{article.created_at}}</span>
     </div>
     {% if is_preview %}
     <button class="btn btn-outline-primary btn-sm pull-xs-right"><i class="ion-heart"></i>
-        {{article.favoritesCount}}</button>
+        {{article.favorites_count}}</button>
     {% else %}
-    {% if username == article.author.username %}
+    {% if username and username == article.author.username %}
     <a class="btn btn-sm btn-outline-secondary" href="{{routes['editor'] ~ '/' ~ article.slug}}"><i
             class="ion-compose"></i> Edit article</a>
-    {% else %}
+    <form method="post" action="{{routes['article'] ~ '/' ~ article.slug ~ '/delete'}}" style="display: inline-block;">
+        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="ion-trash-a"></i> Delete
+            article</button>
+    </form>
+    {% elif username %}
     <button class="btn btn-sm btn-outline-secondary"><i class="ion-plus-round"></i> Follow
         {{article.author.username}}</button>
-    {% endif %}
     <button class="btn btn-sm btn-outline-primary"><i class="ion-heart"></i> Favorite Post <span
-            class="counter">({{article.favoritesCount}})</span></button>
+            class="counter">({{article.favorites_count}})</span></button>
+    {% endif %}
     {% endif %}
 </div>
 {% endmacro metadata %}

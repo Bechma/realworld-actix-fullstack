@@ -17,7 +17,7 @@ pub async fn editor_get(
     path_params: web::Path<PathInfo>,
     pool: web::Data<sqlx::PgPool>,
 ) -> impl Responder {
-    if !crate::auth::is_authenticated(&session) {
+    if !crate::auth::get_session_username(&session).is_some() {
         return HttpResponse::build(StatusCode::FOUND)
             .insert_header((actix_web::http::header::LOCATION, ROUTES["index"].as_str()))
             .finish();
@@ -65,17 +65,10 @@ pub async fn editor_post(
     article_form: web::Form<ArticleForm>,
     pool: web::Data<sqlx::PgPool>,
 ) -> impl Responder {
-    let slug = if let Ok(res) = crate::auth::get_username(&session) {
-        if let Some(author) = res {
-            update_article(author, path_params, article_form, pool)
-                .await
-                .unwrap()
-        } else {
-            // Not authenticated
-            return HttpResponse::build(StatusCode::FOUND)
-                .insert_header((actix_web::http::header::LOCATION, ROUTES["index"].as_str()))
-                .finish();
-        }
+    let slug = if let Some(author) = crate::auth::get_session_username(&session) {
+        update_article(author, path_params, article_form, pool)
+            .await
+            .unwrap()
     } else {
         // Not authenticated
         return HttpResponse::build(StatusCode::FOUND)

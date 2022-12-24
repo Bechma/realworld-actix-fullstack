@@ -22,10 +22,8 @@ pub fn render_template(
         context.insert("current", &ROUTES[current.as_str()]);
     }
     context.insert("routes", &ROUTES.clone());
-    if let Ok(username) = crate::auth::get_username(&session) {
-        if let Some(username) = username {
-            context.insert("username", &username);
-        }
+    if let Some(username) = crate::auth::get_session_username(&session) {
+        context.insert("username", &username);
     }
     match TEMPLATES.render(template, &context) {
         Ok(body) => HttpResponse::build(StatusCode::OK)

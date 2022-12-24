@@ -20,9 +20,7 @@ pub async fn index(
     let page = query_params.page.unwrap_or(1).saturating_sub(1) as i64;
     let amount = query_params.amount.unwrap_or(10) as i64;
     let personal_feed = if query_params.myfeed.is_some() {
-        crate::auth::get_username(&session)
-            .unwrap_or_default()
-            .unwrap_or("%%".to_string())
+        crate::auth::get_session_username(&session).unwrap_or("%%".to_string())
     } else {
         "%%".to_string()
     };
@@ -37,10 +35,9 @@ SELECT
     (SELECT COUNT(*) FROM FavArticles WHERE slug = a.slug) as favorites_count,
     u.username, u.image
 FROM Articles as a
-    JOIN Users as u ON a.author = u.username
-    JOIN ArticleTags as tags ON tags.article = a.slug and tags.tag LIKE $3
+    JOIN Users as u ON u.username LIKE $4 and a.author = u.username
 WHERE
-    u.username LIKE $4
+    a.slug in (SELECT distinct article FROM ArticleTags WHERE tag LIKE $3)
 ORDER BY a.created_at desc
 LIMIT $1 OFFSET $2",
         amount,
@@ -48,10 +45,6 @@ LIMIT $1 OFFSET $2",
         query_params.tag.clone().unwrap_or("%%".to_string()),
         personal_feed
     )
-    .fetch_all(&mut conn)
-    .await
-    .unwrap()
-    .into_iter()
     .map(|x| ArticlePreview {
         slug: x.slug,
         title: x.title,
@@ -65,7 +58,9 @@ LIMIT $1 OFFSET $2",
             image: x.image,
         },
     })
-    .collect();
+    .fetch_all(&mut conn)
+    .await
+    .unwrap();
 
     let tags: Vec<String> = sqlx::query!("SELECT DISTINCT tag FROM ArticleTags")
         .map(|x| x.tag)

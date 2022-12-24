@@ -7,14 +7,14 @@ CREATE TABLE IF NOT EXISTS Users (
 );
 
 CREATE TABLE IF NOT EXISTS Follows (
-    follows text NOT NULL REFERENCES Users(username),
-    influencer text NOT NULL REFERENCES Users(username),
+    follows text NOT NULL REFERENCES Users(username) ON DELETE CASCADE ON UPDATE CASCADE,
+    influencer text NOT NULL REFERENCES Users(username) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (follows, influencer)
 );
 
 CREATE TABLE IF NOT EXISTS Articles (
     slug text NOT NULL PRIMARY KEY,
-    author text NOT NULL REFERENCES Users(username),
+    author text NOT NULL REFERENCES Users(username) ON DELETE CASCADE ON UPDATE CASCADE,
     title text NOT NULL,
     description text NOT NULL,
     body text NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS Articles (
 );
 
 CREATE TABLE IF NOT EXISTS ArticleTags (
-    article text NOT NULL REFERENCES Articles(slug),
+    article text NOT NULL REFERENCES Articles(slug) ON DELETE CASCADE ON UPDATE CASCADE,
     tag text NOT NULL,
     PRIMARY KEY (article, tag)
 );
@@ -31,14 +31,15 @@ CREATE TABLE IF NOT EXISTS ArticleTags (
 CREATE INDEX tags ON ArticleTags (tag);
 
 CREATE TABLE IF NOT EXISTS FavArticles (
-    article text NOT NULL REFERENCES Articles(slug),
-    username text NOT NULL REFERENCES Users(username),
+    article text NOT NULL REFERENCES Articles(slug) ON DELETE CASCADE ON UPDATE CASCADE,
+    username text NOT NULL REFERENCES Users(username) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (article, username)
 );
 
 CREATE TABLE IF NOT EXISTS Comments (
-    id int PRIMARY KEY,
-    article text NOT NULL REFERENCES Articles(slug),
-    username text NOT NULL,
+    id int PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    article text NOT NULL REFERENCES Articles(slug) ON DELETE CASCADE ON UPDATE CASCADE,
+    username text NOT NULL REFERENCES Users(username) ON DELETE CASCADE ON UPDATE CASCADE,
+    body text NOT NULL,
     created_at TIMESTAMPTZ NOT NULL default NOW()
 );

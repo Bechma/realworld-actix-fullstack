@@ -3,9 +3,12 @@
 WIP
 
 TODO:
-- [ ] Implement commenting section
+- [x] Implement commenting section
+- [x] Buttons to Edit/Remove your articles
+- [ ] Fav/Unfav article
+- [ ] Follow/Unfollow users
+- [ ] "Your feed" works
 - [ ] Improve error handling
-- [ ] Buttons to Edit/Remove your articles
 - [ ] Write some unit tests
 - [ ] Write some functional tests
 - [ ] Polishing

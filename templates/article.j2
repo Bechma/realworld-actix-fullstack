@@ -21,7 +21,7 @@
         </div>
 
         <ul class="tag-list">
-            {% for t in article.tagList %}
+            {% for t in article.tag_list %}
             <li class="tag-default tag-pill tag-outline">{{t}}</li>
             {% endfor %}
         </ul>
@@ -34,55 +34,42 @@
 
         <div class="row">
             <div class="col-xs-12 col-md-8 offset-md-2">
-                <form class="card comment-form">
+                {% if user %}
+                <form method="post" action="{{routes['article'] ~ '/' ~ article.slug ~ '/comments'}}"
+                    class="card comment-form">
                     <div class="card-block">
-                        <textarea class="form-control" placeholder="Write a comment..." rows="3"></textarea>
+                        <textarea name="body" class="form-control" placeholder="Write a comment..." rows="3"></textarea>
                     </div>
                     <div class="card-footer">
-                        <img src="http://i.imgur.com/Qr71crq.jpg" class="comment-author-img" />
-                        <button class="btn btn-sm btn-primary">
+                        <img src="{{user.image}}" class="comment-author-img" />
+                        <button class="btn btn-sm btn-primary" type="submit">
                             Post Comment
                         </button>
                     </div>
                 </form>
+                {% endif %}
 
-                <div class="card">
+                {% for c in comments %}
+                <div id="comment-{{c.id}}" class="card">
                     <div class="card-block">
-                        <p class="card-text">
-                            With supporting text below as a natural lead-in
-                            to additional content.
-                        </p>
+                        <p class="card-text">{{c.body}}</p>
                     </div>
                     <div class="card-footer">
-                        <a href="" class="comment-author">
-                            <img src="http://i.imgur.com/Qr71crq.jpg" class="comment-author-img" />
+                        <a href="{{c.user_link}}" class="comment-author">
+                            <img src="{{c.user_image}}" class="comment-author-img" />
                         </a>
                         &nbsp;
-                        <a href="" class="comment-author">Jacob Schmidt</a>
-                        <span class="date-posted">Dec 29th</span>
+                        <a href="{{c.user_link}}" class="comment-author">{{c.username}}</a>
+                        <span class="date-posted">{{c.created_at}}</span>
+                        {% if username and username == c.username %}
+                        <form action="{{routes['article'] ~ '/' ~ article.slug ~ '/comments/' ~ c.id}}" method="post"
+                            class="comment-author">
+                            <button class="btn btn-sm" type="submit"><i class="ion-trash-b"></i></button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
-
-                <div class="card">
-                    <div class="card-block">
-                        <p class="card-text">
-                            With supporting text below as a natural lead-in
-                            to additional content.
-                        </p>
-                    </div>
-                    <div class="card-footer">
-                        <a href="" class="comment-author">
-                            <img src="http://i.imgur.com/Qr71crq.jpg" class="comment-author-img" />
-                        </a>
-                        &nbsp;
-                        <a href="" class="comment-author">Jacob Schmidt</a>
-                        <span class="date-posted">Dec 29th</span>
-                        <span class="mod-options">
-                            <i class="ion-edit"></i>
-                            <i class="ion-trash-a"></i>
-                        </span>
-                    </div>
-                </div>
+                {% endfor %}
             </div>
         </div>
     </div>

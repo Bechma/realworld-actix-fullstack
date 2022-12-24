@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use self::article::article;
+use self::article::{article, article_delete};
+use self::comments::{comments_create, comments_delete};
 use self::editor::{editor_get, editor_post};
 use self::index::index;
 use self::login::{login_get, login_post};
@@ -11,6 +12,7 @@ use self::settings::{settings_get, settings_post};
 use actix_web::web;
 
 mod article;
+mod comments;
 mod db_models;
 mod editor;
 mod index;
@@ -40,6 +42,18 @@ pub fn apply_routes(cfg: &mut web::ServiceConfig) {
         .route(
             &(ROUTES["article"].to_string() + "/{slug}"),
             web::get().to(article),
+        )
+        .route(
+            &(ROUTES["article"].to_string() + "/{slug}/delete"),
+            web::post().to(article_delete),
+        )
+        .route(
+            &(ROUTES["article"].to_string() + "/{slug}/comments"),
+            web::post().to(comments_create),
+        )
+        .route(
+            &(ROUTES["article"].to_string() + "/{slug}/comments/{id}"),
+            web::post().to(comments_delete),
         )
         .route(&ROUTES["logout"], web::get().to(logout))
         .route(&ROUTES["logout"], web::post().to(logout))
