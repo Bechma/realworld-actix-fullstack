@@ -38,7 +38,7 @@ pub async fn create_server() -> App<
                 session_key.clone(),
             )
             .cookie_name("session".into())
-            .cookie_secure(std::env::var_os("PRODUCTION").is_some())
+            .cookie_secure(false)
             .build(),
         )
         .configure(apply_routes)

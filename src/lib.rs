@@ -2,7 +2,7 @@ mod auth;
 mod routing;
 mod template;
 
-use actix_web::web::ServiceConfig;
+use actix_web::{middleware::Logger, web::ServiceConfig};
 use anyhow::anyhow;
 use shuttle_service::ShuttleActixWeb;
 use sqlx::Executor;
@@ -34,7 +34,8 @@ async fn actix_web(
 
     Ok(move |cfg: &mut ServiceConfig| {
         cfg.service(
-            actix_web::web::scope("/")
+            actix_web::web::scope("")
+                .app_data(actix_web::web::Data::new(pool.clone()))
                 .wrap(
                     actix_session::SessionMiddleware::builder(
                         actix_session::storage::CookieSessionStore::default(),
@@ -44,6 +45,7 @@ async fn actix_web(
                     .cookie_secure(true)
                     .build(),
                 )
+                .wrap(Logger::default())
                 .configure(apply_routes),
         );
     })
