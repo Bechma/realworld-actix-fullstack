@@ -1,3 +1,5 @@
+use std::os::unix::prelude::OsStrExt;
+
 use crate::routing::apply_routes;
 use actix_web::{middleware::Logger, App, HttpServer};
 
@@ -5,7 +7,7 @@ mod auth;
 mod routing;
 mod template;
 use env_logger::Env;
-use sqlx::postgres::PgPoolOptions;
+use sqlx::{postgres::PgPoolOptions, Executor};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -15,12 +17,16 @@ async fn main() -> std::io::Result<()> {
         .connect(&std::env::var("DATABASE_URL").expect("DATABASE_URL environment is not set"))
         .await
         .expect("database connection can't be done");
-    sqlx::query!("CREATE EXTENSION IF NOT EXISTS pgcrypto")
-        .execute(&pool)
+    pool.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
         .await
         .expect("pgcrypto not available");
-    let session_key =
-        actix_web::cookie::Key::try_from("1".repeat(2048).as_bytes()).expect("secret");
+    sqlx::migrate!().run(&pool).await.expect("migrations done");
+
+    let session_key = actix_web::cookie::Key::from(
+        std::env::var_os("COOKIE_SECRET")
+            .expect("cookie secret not set")
+            .as_bytes(),
+    );
 
     HttpServer::new(move || {
         App::new()

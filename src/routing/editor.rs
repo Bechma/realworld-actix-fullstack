@@ -19,7 +19,7 @@ pub async fn editor_get(
 ) -> impl Responder {
     if !crate::auth::get_session_username(&session).is_some() {
         return HttpResponse::build(StatusCode::FOUND)
-            .insert_header((actix_web::http::header::LOCATION, ROUTES["index"].as_str()))
+            .insert_header((actix_web::http::header::LOCATION, ROUTES["login"].as_str()))
             .finish();
     }
     let article = if let Some(slug) = &path_params.slug {

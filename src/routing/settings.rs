@@ -31,7 +31,7 @@ pub async fn settings_get(
         return crate::template::render_template("settings.j2", session, &mut context);
     }
     HttpResponse::Found()
-        .append_header((header::LOCATION, ROUTES["index"].as_str()))
+        .append_header((header::LOCATION, ROUTES["login"].as_str()))
         .finish()
 }
 

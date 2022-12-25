@@ -9,8 +9,7 @@ TODO:
 - [x] Follow/Unfollow users
 - [x] "Your feed" works
 - [ ] Improve error handling
-- [ ] Write some unit tests
-- [ ] Write some functional tests
+- [x] Write some tests
 - [ ] Polishing
 - [ ] Prepare deployment files
 - [ ] Deploy somewhere, IDK where yet, but it must be free

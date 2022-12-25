@@ -63,7 +63,6 @@ pub fn apply_routes(cfg: &mut web::ServiceConfig) {
             &(ROUTES["article"].to_string() + "/{slug}/unfav"),
             web::post().to(article_del_favorite),
         )
-        .route(&ROUTES["logout"], web::get().to(logout))
         .route(&ROUTES["logout"], web::post().to(logout))
         .route(&ROUTES["login"], web::get().to(login_get))
         .route(&ROUTES["login"], web::post().to(login_post))
