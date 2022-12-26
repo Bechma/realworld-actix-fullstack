@@ -1789,11 +1789,13 @@ dependencies = [
  "dotenvy",
  "env_logger",
  "lazy_static",
+ "once_cell",
  "serde",
  "serde_json",
  "shuttle-secrets",
  "shuttle-service",
  "shuttle-shared-db",
+ "shuttle-static-folder",
  "sqlx",
  "tera",
  "tokio",
@@ -2120,6 +2122,17 @@ dependencies = [
  "async-trait",
  "shuttle-service",
  "sqlx",
+ "tokio",
+]
+
+[[package]]
+name = "shuttle-static-folder"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7514bca7dca0ad4cdd181e9a4fb5c2c3402cde9a20516a750a272bca936ac577"
+dependencies = [
+ "async-trait",
+ "shuttle-service",
  "tokio",
 ]
 

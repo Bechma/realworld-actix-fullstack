@@ -5,11 +5,7 @@ use actix_web::{
 
 use crate::routing::ROUTES;
 lazy_static::lazy_static! {
-    static ref TEMPLATES: tera::Tera = {
-        let mut tera = tera::Tera::new("templates/**/*").expect("Parsing error while loading template folder");
-        tera.autoescape_on(vec!["j2"]);
-        tera
-    };
+    pub static ref TEMPLATES: once_cell::sync::OnceCell<tera::Tera> = once_cell::sync::OnceCell::new();
 }
 
 pub fn render_template(
@@ -25,7 +21,7 @@ pub fn render_template(
     if let Some(username) = crate::auth::get_session_username(&session) {
         context.insert("username", &username);
     }
-    match TEMPLATES.render(template, &context) {
+    match TEMPLATES.get().unwrap().render(template, &context) {
         Ok(body) => HttpResponse::build(StatusCode::OK)
             .content_type(ContentType::html())
             .body(body),

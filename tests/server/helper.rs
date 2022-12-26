@@ -2,7 +2,7 @@ use actix_web::{
     dev::{ServiceFactory, ServiceRequest, ServiceResponse},
     App,
 };
-use realworld_rust_fullstack::apply_routes;
+use realworld_rust_fullstack::{apply_routes, TEMPLATES};
 use sqlx::{postgres::PgPoolOptions, Executor};
 
 pub async fn get_test_pool() -> sqlx::PgPool {
@@ -16,6 +16,7 @@ pub async fn get_test_pool() -> sqlx::PgPool {
     p
 }
 
+#[allow(unused_must_use)]
 pub async fn create_server() -> App<
     impl ServiceFactory<
         ServiceRequest,
@@ -25,6 +26,12 @@ pub async fn create_server() -> App<
         InitError = (),
     >,
 > {
+    TEMPLATES.set({
+        let mut tera =
+            tera::Tera::new("templates/**/*").expect("Parsing error while loading template folder");
+        tera.autoescape_on(vec!["j2"]);
+        tera
+    });
     let pool = get_test_pool().await;
     sqlx::migrate!().undo(&pool, i64::MAX).await.unwrap();
     sqlx::migrate!().run(&pool).await.unwrap();

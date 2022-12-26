@@ -1,6 +1,7 @@
 use std::os::unix::prelude::OsStrExt;
 
 use crate::routing::apply_routes;
+use crate::template::TEMPLATES;
 use actix_web::{middleware::Logger, App, HttpServer};
 
 mod auth;
@@ -21,6 +22,15 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("pgcrypto not available");
     sqlx::migrate!().run(&pool).await.expect("migrations done");
+
+    TEMPLATES
+        .set({
+            let mut tera = tera::Tera::new("templates/**/*")
+                .expect("Parsing error while loading template folder");
+            tera.autoescape_on(vec!["j2"]);
+            tera
+        })
+        .expect("cannot initialize tera");
 
     let session_key = actix_web::cookie::Key::from(
         std::env::var_os("COOKIE_SECRET")
