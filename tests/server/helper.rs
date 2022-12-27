@@ -7,7 +7,7 @@ use sqlx::{postgres::PgPoolOptions, Executor};
 
 pub async fn get_test_pool() -> sqlx::PgPool {
     let p = PgPoolOptions::new()
-        .connect(&"postgres://postgres:postgres@localhost/postgres")
+        .connect("postgres://postgres:postgres@localhost/postgres")
         .await
         .expect("database connection can't be done");
     p.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
@@ -42,7 +42,7 @@ pub async fn create_server() -> App<
         .wrap(
             actix_session::SessionMiddleware::builder(
                 actix_session::storage::CookieSessionStore::default(),
-                session_key.clone(),
+                session_key,
             )
             .cookie_name("session".into())
             .cookie_secure(false)

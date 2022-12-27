@@ -55,7 +55,7 @@ pub async fn settings_post(
             if form_data.password != form_data.confirm_password {
                 let mut context = tera::Context::new();
                 let user = User {
-                    username: username,
+                    username,
                     email: form_data.email.to_string(),
                     bio: Some(form_data.bio.to_string()),
                     image: Some(form_data.image.to_string()),

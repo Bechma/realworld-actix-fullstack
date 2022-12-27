@@ -17,7 +17,7 @@ pub async fn editor_get(
     path_params: web::Path<PathInfo>,
     pool: web::Data<sqlx::PgPool>,
 ) -> impl Responder {
-    if !crate::auth::get_session_username(&session).is_some() {
+    if crate::auth::get_session_username(&session).is_none() {
         return HttpResponse::build(StatusCode::FOUND)
             .insert_header((actix_web::http::header::LOCATION, ROUTES["login"].as_str()))
             .finish();
@@ -111,7 +111,7 @@ async fn update_article(
         .await?;
         slug.to_string()
     } else {
-        let slug = article_form.title.to_lowercase().replace(" ", "-");
+        let slug = article_form.title.to_lowercase().replace(' ', "-");
         sqlx::query!(
             "INSERT INTO Articles(slug, title, description, body, author) VALUES ($1, $2, $3, $4, $5)",
             slug,

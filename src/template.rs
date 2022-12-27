@@ -21,7 +21,7 @@ pub fn render_template(
     if let Some(username) = crate::auth::get_session_username(&session) {
         context.insert("username", &username);
     }
-    match TEMPLATES.get().unwrap().render(template, &context) {
+    match TEMPLATES.get().unwrap().render(template, context) {
         Ok(body) => HttpResponse::build(StatusCode::OK)
             .content_type(ContentType::html())
             .body(body),

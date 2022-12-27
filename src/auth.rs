@@ -2,7 +2,7 @@ use actix_web::{http::StatusCode, HttpResponse};
 
 use crate::routing::ROUTES;
 
-const AUTHOR_NAME: &'static str = "name";
+const AUTHOR_NAME: &str = "name";
 
 pub fn redirect_to_profile(session: &actix_session::Session) -> Option<HttpResponse> {
     if let Some(name) = get_session_username(session) {
