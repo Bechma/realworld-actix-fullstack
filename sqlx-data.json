@@ -12,6 +12,84 @@
     },
     "query": "DELETE FROM ArticleTags WHERE article=$1"
   },
+  "1e8a6cf21890127a071dab6e2cc9c7b5ea6b3c7724be5d3f40594abe2eb0da5c": {
+    "describe": {
+      "columns": [
+        {
+          "name": "slug",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "favorites_count",
+          "ordinal": 4,
+          "type_info": "Int8"
+        },
+        {
+          "name": "username",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "image",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "fav",
+          "ordinal": 7,
+          "type_info": "Bool"
+        },
+        {
+          "name": "following",
+          "ordinal": 8,
+          "type_info": "Bool"
+        },
+        {
+          "name": "tag_list",
+          "ordinal": 9,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        null,
+        false,
+        true,
+        null,
+        null,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Text",
+          "Bool",
+          "Text"
+        ]
+      }
+    },
+    "query": "\nSELECT \n    a.slug,\n    a.title,\n    a.description,\n    a.created_at,\n    (SELECT COUNT(*) FROM FavArticles WHERE article=a.slug) as favorites_count,\n    u.username, u.image,\n    EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$5) as fav,\n    EXISTS(SELECT 1 FROM Follows WHERE follower=$5 and influencer=u.username) as following,\n    (SELECT string_agg(tag, ' ') FROM ArticleTags WHERE article = a.slug) as tag_list\nFROM Articles as a\n    JOIN Users as u ON a.author = u.username\nWHERE\n    CASE WHEN $3!='' THEN a.slug in (SELECT distinct article FROM ArticleTags WHERE tag=$3)\n    ELSE 1=1\n    END\n    AND\n    CASE WHEN $4 THEN u.username in (SELECT influencer FROM Follows WHERE follower=$5)\n    ELSE 1=1\n    END\nORDER BY a.created_at desc\nLIMIT $1 OFFSET $2"
+  },
   "2aacc0949964d9ea023557a92bb33bdc7f1822583c91d2ce8be6cbc215d80b31": {
     "describe": {
       "columns": [
@@ -70,7 +148,7 @@
     },
     "query": "INSERT INTO FavArticles(article, username) VALUES ($1, $2) ON CONFLICT DO NOTHING"
   },
-  "460f95c5daee8c54daa05eed8f6d5045e010e893cd6ff9074415dc53e85ba7fc": {
+  "5309cf73b61428194f3b8ea3692850cfa816436e178f5120ed830f86488f49c3": {
     "describe": {
       "columns": [
         {
@@ -79,44 +157,39 @@
           "type_info": "Text"
         },
         {
-          "name": "title",
+          "name": "author",
           "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "name": "description",
+          "name": "title",
           "ordinal": 2,
           "type_info": "Text"
         },
         {
-          "name": "created_at",
+          "name": "description",
           "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "body",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 5,
           "type_info": "Timestamptz"
         },
         {
-          "name": "favorites_count",
-          "ordinal": 4,
-          "type_info": "Int8"
-        },
-        {
-          "name": "username",
-          "ordinal": 5,
-          "type_info": "Text"
-        },
-        {
-          "name": "image",
+          "name": "updated_at",
           "ordinal": 6,
-          "type_info": "Text"
+          "type_info": "Timestamptz"
         },
         {
-          "name": "fav",
+          "name": "tag_list",
           "ordinal": 7,
-          "type_info": "Bool"
-        },
-        {
-          "name": "following",
-          "ordinal": 8,
-          "type_info": "Bool"
+          "type_info": "Text"
         }
       ],
       "nullable": [
@@ -124,23 +197,18 @@
         false,
         false,
         false,
-        null,
         false,
-        true,
-        null,
+        false,
+        false,
         null
       ],
       "parameters": {
         "Left": [
-          "Int8",
-          "Int8",
-          "Text",
-          "Text",
           "Text"
         ]
       }
     },
-    "query": "\nSELECT \n    a.slug,\n    a.title,\n    a.description,\n    a.created_at,\n    (SELECT COUNT(*) FROM FavArticles WHERE article=a.slug) as favorites_count,\n    u.username, u.image,\n    EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$5) as fav,\n    EXISTS(SELECT 1 FROM Follows WHERE follower=$5 and influencer=u.username) as following\nFROM Articles as a\n    JOIN Users as u ON u.username LIKE $4 and a.author = u.username\nWHERE\n    a.slug in (SELECT distinct article FROM ArticleTags WHERE tag LIKE $3)\nORDER BY a.created_at desc\nLIMIT $1 OFFSET $2"
+    "query": "\nSELECT\n    a.*,\n    (SELECT string_agg(tag, ' ') FROM ArticleTags WHERE article = a.slug) as tag_list\nFROM Articles a WHERE slug = $1"
   },
   "5fbd37fc15396606dfff3ccbfb9c05a3f9cf3cda84211b3a1025b7a450ce54c2": {
     "describe": {
@@ -194,64 +262,7 @@
     },
     "query": "DELETE FROM Comments WHERE id=$1 and article=$2 and username=$3"
   },
-  "7558c04e9ee249c1122269901dfc430754f601e2f3c296c89d9ad4756458db40": {
-    "describe": {
-      "columns": [
-        {
-          "name": "slug",
-          "ordinal": 0,
-          "type_info": "Text"
-        },
-        {
-          "name": "title",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "description",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "favorites_count",
-          "ordinal": 4,
-          "type_info": "Int8"
-        },
-        {
-          "name": "fav",
-          "ordinal": 5,
-          "type_info": "Bool"
-        },
-        {
-          "name": "following",
-          "ordinal": 6,
-          "type_info": "Bool"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        null,
-        null,
-        null
-      ],
-      "parameters": {
-        "Left": [
-          "Text",
-          "Text"
-        ]
-      }
-    },
-    "query": "\nSELECT \n    a.slug,\n    a.title,\n    a.description,\n    a.created_at,\n    (SELECT COUNT(*) FROM FavArticles WHERE article=a.slug) as favorites_count,\n    EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$2) as fav,\n    EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=a.author) as following\nFROM Articles as a\nWHERE a.author = $1"
-  },
-  "75fc85f4c0d63a7f89501c600f23187333776344ab0719184f7a775bc299d1c7": {
+  "7515d3571a8885860b583bbd0afc4dbfc6bd712dbdfd643a172bdd4fab445b77": {
     "describe": {
       "columns": [],
       "nullable": [],
@@ -264,7 +275,7 @@
         ]
       }
     },
-    "query": "UPDATE Articles SET title=$1, description=$2, body=$3 where slug=$4"
+    "query": "UPDATE Articles SET title=$1, description=$2, body=$3 WHERE slug=$4"
   },
   "7ab30b9e8362e6e8efe06250f52aba7d5282830ebeb6c5d7a83462fa6a49babf": {
     "describe": {
@@ -316,7 +327,7 @@
     },
     "query": "\nSELECT c.*, u.image as user_image FROM Comments c\n    JOIN Users u ON c.username=u.username\nWHERE article=$1"
   },
-  "8812ae1789abb8bcc1017b4b0e78b9f9c3c6c66140a01dfff2df0c1e0749edad": {
+  "8c93955407b6d49c5a5681dc6fd26310a72de4291e02741d54882f48c9cdd2e3": {
     "describe": {
       "columns": [
         {
@@ -353,6 +364,11 @@
           "name": "following",
           "ordinal": 6,
           "type_info": "Bool"
+        },
+        {
+          "name": "tag_list",
+          "ordinal": 7,
+          "type_info": "Text"
         }
       ],
       "nullable": [
@@ -360,6 +376,7 @@
         false,
         false,
         false,
+        null,
         null,
         null,
         null
@@ -371,7 +388,7 @@
         ]
       }
     },
-    "query": "\nSELECT \n    a.slug,\n    a.title,\n    a.description,\n    a.created_at,\n    (SELECT COUNT(*) FROM FavArticles WHERE article=a.slug) as favorites_count,\n    EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$2) as fav,\n    EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=a.author) as following\nFROM Articles as a\n    JOIN FavArticles as fa ON fa.article = a.slug and fa.username = $1"
+    "query": "\nSELECT \n    a.slug,\n    a.title,\n    a.description,\n    a.created_at,\n    (SELECT COUNT(*) FROM FavArticles WHERE article=a.slug) as favorites_count,\n    EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$2) as fav,\n    EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=a.author) as following,\n    (SELECT string_agg(tag, ' ') FROM ArticleTags WHERE article = a.slug) as tag_list\nFROM Articles as a\nWHERE a.author = $1"
   },
   "9711de803e4fcb6b9a08b56f9ab04cc4b1a0bc6e2111c8062bb6100626f533dd": {
     "describe": {
@@ -553,6 +570,69 @@
     },
     "query": "DELETE FROM Articles WHERE slug=$1 and author=$2"
   },
+  "b6fa79171967c2855d9fcbe071dd5f34a6ea7855e94a2cc615737ade48635a83": {
+    "describe": {
+      "columns": [
+        {
+          "name": "slug",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "favorites_count",
+          "ordinal": 4,
+          "type_info": "Int8"
+        },
+        {
+          "name": "fav",
+          "ordinal": 5,
+          "type_info": "Bool"
+        },
+        {
+          "name": "following",
+          "ordinal": 6,
+          "type_info": "Bool"
+        },
+        {
+          "name": "tag_list",
+          "ordinal": 7,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        null,
+        null,
+        null,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "\nSELECT \n    a.slug,\n    a.title,\n    a.description,\n    a.created_at,\n    (SELECT COUNT(*) FROM FavArticles WHERE article=a.slug) as favorites_count,\n    EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$2) as fav,\n    EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=a.author) as following,\n    (SELECT string_agg(tag, ' ') FROM ArticleTags WHERE article = a.slug) as tag_list\nFROM Articles as a\n    JOIN FavArticles as fa ON fa.article = a.slug and fa.username = $1"
+  },
   "cfe53c0aa11dc6361eee6913819c73761ab0c8355b6b2b73ed840322e565cd08": {
     "describe": {
       "columns": [],
@@ -643,67 +723,5 @@
       }
     },
     "query": "INSERT INTO Follows(follower, influencer) VALUES ($1, $2) ON CONFLICT DO NOTHING"
-  },
-  "f8ce1ad44b3933aceb12d7a8d76d0384161d2c19416bd534d1359b16b30e2985": {
-    "describe": {
-      "columns": [
-        {
-          "name": "slug",
-          "ordinal": 0,
-          "type_info": "Text"
-        },
-        {
-          "name": "author",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "title",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "description",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "body",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 5,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "updated_at",
-          "ordinal": 6,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "tag_list",
-          "ordinal": 7,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        null
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "SELECT a.*, (SELECT string_agg(tag, ' ') FROM ArticleTags WHERE article = a.slug) as tag_list FROM Articles a WHERE slug = $1"
   }
 }
