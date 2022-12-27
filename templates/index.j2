@@ -43,7 +43,12 @@ Conduit
 
                     <div class="tag-list">
                         {% for t in tags %}
+                        {% if tag == t %}
+                        <a href="{{routes['index']}}" class="tag-pill tag-default tag-primary">{{t}}</a>
+                        {% else %}
                         <a href="{{routes['index'] ~ '?tag=' ~ t}}" class="tag-pill tag-default">{{t}}</a>
+                        {% endif %}
+
                         {% endfor %}
                     </div>
                 </div>

@@ -75,7 +75,7 @@ WHERE slug = $1
         body: x.body,
         tag_list: x
             .tag_list
-            .unwrap()
+            .unwrap_or_default()
             .split_ascii_whitespace()
             .map(str::to_string)
             .collect::<Vec<_>>(),

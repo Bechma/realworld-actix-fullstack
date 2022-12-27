@@ -47,7 +47,8 @@ SELECT
     a.created_at,
     (SELECT COUNT(*) FROM FavArticles WHERE article=a.slug) as favorites_count,
     EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$2) as fav,
-    EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=a.author) as following
+    EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=a.author) as following,
+    (SELECT string_agg(tag, ' ') FROM ArticleTags WHERE article = a.slug) as tag_list
 FROM Articles as a
     JOIN FavArticles as fa ON fa.article = a.slug and fa.username = $1",
             path_params.username,
@@ -60,6 +61,7 @@ FROM Articles as a
             description: x.description,
             created_at: x.created_at.format("%d/%m/%Y %H:%M").to_string(),
             favorites_count: x.favorites_count,
+            tags: x.tag_list.unwrap_or_default(),
             author: User {
                 username: user.username.to_string(),
                 email: user.email.to_string(),
@@ -81,7 +83,8 @@ SELECT
     a.created_at,
     (SELECT COUNT(*) FROM FavArticles WHERE article=a.slug) as favorites_count,
     EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$2) as fav,
-    EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=a.author) as following
+    EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=a.author) as following,
+    (SELECT string_agg(tag, ' ') FROM ArticleTags WHERE article = a.slug) as tag_list
 FROM Articles as a
 WHERE a.author = $1",
             path_params.username,
@@ -94,6 +97,7 @@ WHERE a.author = $1",
             description: x.description,
             created_at: x.created_at.format("%d/%m/%Y %H:%M").to_string(),
             favorites_count: x.favorites_count,
+            tags: x.tag_list.unwrap_or_default(),
             author: User {
                 username: user.username.to_string(),
                 email: user.email.to_string(),

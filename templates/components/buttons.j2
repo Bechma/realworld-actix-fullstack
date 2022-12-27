@@ -13,14 +13,14 @@
 {% if username %}
 <form method="post"
     action="{{routes['article'] ~ '/' ~ article.slug}}{% if article.fav %}/unfav{% else %}/fav{% endif %}"
-    style="display: inline-block;">
+    style="display: inline-block;" class="pull-xs-right">
     <button type="submit" class="btn btn-sm btn-outline-primary"><i
             class="ion-heart{% if article.fav %}-broken{% endif %}"></i>
         {% if article.fav %}Unfav{% else %}Fav{% endif %} Post <span
             class="counter">({{article.favorites_count}})</span></button>
 </form>
 {% else %}
-<button type="submit" class="btn btn-sm btn-outline-primary"><i class="ion-heart"></i>
+<button type="submit" class="btn btn-sm btn-outline-primary pull-xs-right"><i class="ion-heart"></i>
     <span class="counter">({{article.favorites_count}})</span></button>
 {% endif %}
 {% endmacro fav %}

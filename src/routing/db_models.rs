@@ -18,6 +18,7 @@ pub struct ArticlePreview {
     pub favorites_count: Option<i64>,
     pub author: User,
     pub fav: bool,
+    pub tags: String,
 }
 
 #[derive(Serialize, Deserialize)]

@@ -20,11 +20,6 @@ pub async fn index(
     let page = query_params.page.unwrap_or(1).saturating_sub(1) as i64;
     let username = crate::auth::get_session_username(&session);
     let amount = query_params.amount.unwrap_or(10) as i64;
-    let personal_feed = if query_params.myfeed.is_some() {
-        username.clone().unwrap_or("%%".to_string())
-    } else {
-        "%%".to_string()
-    };
 
     let articles = sqlx::query!(
         "
@@ -36,17 +31,24 @@ SELECT
     (SELECT COUNT(*) FROM FavArticles WHERE article=a.slug) as favorites_count,
     u.username, u.image,
     EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$5) as fav,
-    EXISTS(SELECT 1 FROM Follows WHERE follower=$5 and influencer=u.username) as following
+    EXISTS(SELECT 1 FROM Follows WHERE follower=$5 and influencer=u.username) as following,
+    (SELECT string_agg(tag, ' ') FROM ArticleTags WHERE article = a.slug) as tag_list
 FROM Articles as a
-    JOIN Users as u ON u.username LIKE $4 and a.author = u.username
+    JOIN Users as u ON a.author = u.username
 WHERE
-    a.slug in (SELECT distinct article FROM ArticleTags WHERE tag LIKE $3)
+    CASE WHEN $3!='' THEN a.slug in (SELECT distinct article FROM ArticleTags WHERE tag=$3)
+    ELSE 1=1
+    END
+    AND
+    CASE WHEN $4 THEN u.username in (SELECT influencer FROM Follows WHERE follower=$5)
+    ELSE 1=1
+    END
 ORDER BY a.created_at desc
 LIMIT $1 OFFSET $2",
         amount,
         page * amount,
-        query_params.tag.clone().unwrap_or("%%".to_string()),
-        personal_feed,
+        query_params.tag.clone().unwrap_or_default(),
+        query_params.myfeed.unwrap_or_default(),
         username.unwrap_or_default(),
     )
     .map(|x| ArticlePreview {
@@ -63,6 +65,7 @@ LIMIT $1 OFFSET $2",
             image: x.image,
             following: x.following.unwrap_or_default(),
         },
+        tags: x.tag_list.unwrap_or_default(),
     })
     .fetch_all(&mut conn)
     .await
@@ -78,5 +81,6 @@ LIMIT $1 OFFSET $2",
     context.insert("tags", &tags);
     context.insert("articles", &articles);
     context.insert("myfeed", &query_params.myfeed.is_some());
+    context.insert("tag", &query_params.tag);
     crate::template::render_template("index.j2", session, &mut context)
 }
