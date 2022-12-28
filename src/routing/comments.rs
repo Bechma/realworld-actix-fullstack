@@ -78,6 +78,9 @@ async fn create_comment(
     body: &str,
     pool: web::Data<sqlx::PgPool>,
 ) -> Option<i32> {
+    if body.is_empty() {
+        return None;
+    }
     let username = crate::auth::get_session_username(&session)?;
     let mut conn = pool.acquire().await.unwrap();
     Some(
