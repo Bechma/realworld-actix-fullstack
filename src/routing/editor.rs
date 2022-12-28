@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use super::ROUTES;
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, Responder};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use super::db_models::ArticleEdit;
 
@@ -52,17 +52,25 @@ FROM Articles a WHERE slug = $1",
         ArticleEdit::default()
     };
     let mut context = tera::Context::new();
+    context.insert("slug", &article.slug);
     context.insert("article", &article);
     crate::template::render_template("editor.j2", session, &mut context)
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ArticleForm {
+    title: Option<String>,
+    description: Option<String>,
+    body: Option<String>,
+    tag_list: Option<String>,
+}
+
+struct ArticleUpdate {
     title: String,
     description: String,
     body: String,
-    tag_list: String,
+    tag_list: HashSet<String>,
 }
 
 const BIND_LIMIT: usize = 65535;
@@ -74,7 +82,17 @@ pub async fn editor_post(
     pool: web::Data<sqlx::PgPool>,
 ) -> impl Responder {
     let slug = if let Some(author) = crate::auth::get_session_username(&session) {
-        update_article(author, path_params, article_form, pool)
+        let article = match validate_article(article_form.clone()) {
+            Ok(x) => x,
+            Err(e) => {
+                let mut context = tera::Context::new();
+                context.insert("slug", &path_params.slug);
+                context.insert("article", &article_form);
+                context.insert("error", &e);
+                return crate::template::render_template("editor.j2", session, &mut context);
+            }
+        };
+        update_article(author, path_params, article, pool)
             .await
             .unwrap()
     } else {
@@ -92,32 +110,65 @@ pub async fn editor_post(
         .finish()
 }
 
+fn validate_article(article_form: ArticleForm) -> Result<ArticleUpdate, String> {
+    let title = article_form.title.unwrap_or_default();
+    if title.len() < 4 {
+        return Err("You need to provide a title with at least 4 characters".into());
+    }
+
+    let description = article_form.description.unwrap_or_default();
+    if description.len() < 4 {
+        return Err("You need to provide a description with at least 4 characters".into());
+    }
+
+    let body = article_form.body.unwrap_or_default();
+    if body.len() < 10 {
+        return Err("You need to provide a body with at least 10 characters".into());
+    }
+
+    let tag_list = article_form
+        .tag_list
+        .unwrap_or_default()
+        .trim()
+        .split_ascii_whitespace()
+        .filter(|x| !x.is_empty())
+        .map(str::to_string)
+        .collect::<HashSet<String>>();
+    Ok(ArticleUpdate {
+        title,
+        description,
+        body,
+        tag_list,
+    })
+}
+
 async fn update_article(
     author: String,
     path_params: web::Path<PathInfo>,
-    article_form: web::Form<ArticleForm>,
+    article: ArticleUpdate,
     pool: web::Data<sqlx::PgPool>,
 ) -> Result<String, sqlx::Error> {
     let mut transaction = pool.begin().await?;
     let slug = if let Some(slug) = &path_params.slug {
         sqlx::query!(
-            "UPDATE Articles SET title=$1, description=$2, body=$3 WHERE slug=$4",
-            article_form.title,
-            article_form.description,
-            article_form.body,
-            slug
+            "UPDATE Articles SET title=$1, description=$2, body=$3 WHERE slug=$4 and author=$5",
+            article.title,
+            article.description,
+            article.body,
+            slug,
+            author,
         )
         .execute(&mut transaction)
         .await?;
         slug.to_string()
     } else {
-        let slug = article_form.title.to_lowercase().replace(' ', "-");
+        let slug = article.title.to_lowercase().replace(' ', "-");
         sqlx::query!(
             "INSERT INTO Articles(slug, title, description, body, author) VALUES ($1, $2, $3, $4, $5)",
             slug,
-            article_form.title,
-            article_form.description,
-            article_form.body,
+            article.title,
+            article.description,
+            article.body,
             author
         )
         .execute(&mut transaction)
@@ -127,15 +178,10 @@ async fn update_article(
     sqlx::query!("DELETE FROM ArticleTags WHERE article=$1", slug)
         .execute(&mut transaction)
         .await?;
-    let article_tags = article_form
-        .tag_list
-        .trim()
-        .split_ascii_whitespace()
-        .collect::<HashSet<&str>>();
-    if !article_tags.is_empty() {
+    if !article.tag_list.is_empty() {
         let mut qb = sqlx::QueryBuilder::new("INSERT INTO ArticleTags(article, tag) ");
         qb.push_values(
-            article_tags.into_iter().take(BIND_LIMIT / 2),
+            article.tag_list.into_iter().take(BIND_LIMIT / 2),
             |mut b, tag| {
                 b.push_bind(slug.clone()).push_bind(tag);
             },
