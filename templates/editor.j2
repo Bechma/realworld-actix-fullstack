@@ -15,16 +15,17 @@
                     <fieldset>
                         <fieldset class="form-group">
                             <input name="title" type="text" class="form-control form-control-lg"
-                                placeholder="Article Title" value="{%if article.title %}{{article.title}}{% endif %}" />
+                                placeholder="Article Title"
+                                value="{% if article.title %}{{article.title}}{% endif %}" />
                         </fieldset>
                         <fieldset class="form-group">
                             <input name="description" type="text" class="form-control"
                                 placeholder="What's this article about?"
-                                value="{%if article.description %}{{article.description}}{% endif %}" />
+                                value="{% if article.description %}{{article.description}}{% endif %}" />
                         </fieldset>
                         <fieldset class="form-group">
                             <textarea name="body" class="form-control" rows="8"
-                                placeholder="Write your article (in markdown)">{%if article.body %}{{article.body}}{% endif %}</textarea>
+                                placeholder="Write your article (in markdown)">{% if article.body %}{{article.body}}{% endif %}</textarea>
                         </fieldset>
                         <fieldset class="form-group">
                             <input name="tagList" type="text" class="form-control"

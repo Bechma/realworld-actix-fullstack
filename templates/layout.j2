@@ -22,6 +22,7 @@
                     <a class="nav-link{% if current == routes['index'] %} active{% endif %}"
                         href="{{routes['index']}}"><i class="ion-home"></i>&nbsp;Home</a>
                 </li>
+                {% if username %}
                 <li class="nav-item">
                     <a class="nav-link{% if current == routes['editor'] %} active{% endif %}"
                         href="{{routes['editor']}}">
@@ -34,7 +35,6 @@
                         <i class="ion-gear-a"></i>&nbsp;Settings
                     </a>
                 </li>
-                {% if username %}
                 {% set profile_path = routes['profile'] ~ '/' ~ username -%}
                 <li class="nav-item">
                     <a class="nav-link{% if current == profile_path %} active{% endif %}" href="{{profile_path}}"><i

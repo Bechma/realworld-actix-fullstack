@@ -262,21 +262,6 @@
     },
     "query": "DELETE FROM Comments WHERE id=$1 and article=$2 and username=$3"
   },
-  "7515d3571a8885860b583bbd0afc4dbfc6bd712dbdfd643a172bdd4fab445b77": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Text",
-          "Text",
-          "Text",
-          "Text"
-        ]
-      }
-    },
-    "query": "UPDATE Articles SET title=$1, description=$2, body=$3 WHERE slug=$4"
-  },
   "7ab30b9e8362e6e8efe06250f52aba7d5282830ebeb6c5d7a83462fa6a49babf": {
     "describe": {
       "columns": [
@@ -723,5 +708,21 @@
       }
     },
     "query": "INSERT INTO Follows(follower, influencer) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+  },
+  "ee1de2c8f0a9e4c47be3bc5ad3df0d45c95b12a84244eaeae6f09975e9d4f80c": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "UPDATE Articles SET title=$1, description=$2, body=$3 WHERE slug=$4 and author=$5"
   }
 }

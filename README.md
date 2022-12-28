@@ -60,16 +60,3 @@ cargo shuttle deploy --no-test
 * All features are applied. However, instead of following a JWT authentication, I used session based.
 * In HTML, there's `<a>` to make get requests to other pages and `<form>` to make get or post requests. This limitation forced me to only make routes with GET and POST.
 * The tests can be expanded more, however, during compilation time SQLx makes sure that all queries are well writen and returns what we expect(so that's somewhat tested =D).
-
-TODO:
-- [x] Implement commenting section
-- [x] Buttons to Edit/Remove your articles
-- [x] Fav/Unfav article
-- [x] Follow/Unfollow users
-- [x] "Your feed" works
-- [ ] Improve error handling
-- [x] Write some tests
-- [ ] Polishing
-- [x] Prepare deployment files
-- [x] Deploy somewhere (shuttle)
-- [x] Finish this TODO with the architecture notes and how to deploy

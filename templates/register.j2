@@ -20,10 +20,12 @@ Register
                 <form action="{{routes['register']}}" method="post" name="form_data">
                     <fieldset class="form-group">
                         <input name="username" class="form-control form-control-lg" type="text"
-                            placeholder="Your Username" />
+                            placeholder="Your Username"
+                            value="{% if reg and reg.username %}{{reg.username}}{% endif %}" />
                     </fieldset>
                     <fieldset class="form-group">
-                        <input name="email" class="form-control form-control-lg" type="text" placeholder="Email" />
+                        <input name="email" class="form-control form-control-lg" type="text" placeholder="Email"
+                            value="{% if reg and reg.email %}{{reg.email}}{% endif %}" />
                     </fieldset>
                     <fieldset class="form-group">
                         <input name="password" class="form-control form-control-lg" type="password"

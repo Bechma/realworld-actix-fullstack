@@ -38,7 +38,9 @@ Profile settings
                     </fieldset>
                 </form>
                 <hr />
-                <a href="{{routes['logout']}}" class="btn btn-outline-danger">Or click here to logout.</a>
+                <form action="{{routes['logout']}}" method="post">
+                    <button type="submit" class="btn btn-outline-danger">Or click here to logout.</button>
+                </form>
             </div>
         </div>
     </div>
