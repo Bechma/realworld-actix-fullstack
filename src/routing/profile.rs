@@ -45,11 +45,14 @@ SELECT
     a.title,
     a.description,
     a.created_at,
+    u.username,
+    u.image,
     (SELECT COUNT(*) FROM FavArticles WHERE article=a.slug) as favorites_count,
     EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$2) as fav,
     EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=a.author) as following,
     (SELECT string_agg(tag, ' ') FROM ArticleTags WHERE article = a.slug) as tag_list
 FROM Articles as a
+    JOIN Users as u ON u.username = a.author
     JOIN FavArticles as fa ON fa.article = a.slug and fa.username = $1",
             path_params.username,
             logged_user,
@@ -63,10 +66,10 @@ FROM Articles as a
             favorites_count: x.favorites_count,
             tags: x.tag_list.unwrap_or_default(),
             author: User {
-                username: user.username.to_string(),
-                email: user.email.to_string(),
-                bio: user.bio.clone(),
-                image: user.image.clone(),
+                username: x.username,
+                email: String::default(),
+                bio: None,
+                image: x.image,
                 following: x.following.unwrap_or_default(),
             },
         })
@@ -100,8 +103,8 @@ WHERE a.author = $1",
             tags: x.tag_list.unwrap_or_default(),
             author: User {
                 username: user.username.to_string(),
-                email: user.email.to_string(),
-                bio: user.bio.clone(),
+                email: String::default(),
+                bio: None,
                 image: user.image.clone(),
                 following: x.following.unwrap_or_default(),
             },

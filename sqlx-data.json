@@ -397,6 +397,81 @@
     },
     "query": "INSERT INTO Comments(article, username, body) VALUES ($1, $2, $3) RETURNING id"
   },
+  "97c8d576563e115aaf94b57b8e6fd8c1dbaba18e6745e039d1becd4e3acb32bf": {
+    "describe": {
+      "columns": [
+        {
+          "name": "slug",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "username",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "image",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "favorites_count",
+          "ordinal": 6,
+          "type_info": "Int8"
+        },
+        {
+          "name": "fav",
+          "ordinal": 7,
+          "type_info": "Bool"
+        },
+        {
+          "name": "following",
+          "ordinal": 8,
+          "type_info": "Bool"
+        },
+        {
+          "name": "tag_list",
+          "ordinal": 9,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        null,
+        null,
+        null,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "\nSELECT \n    a.slug,\n    a.title,\n    a.description,\n    a.created_at,\n    u.username,\n    u.image,\n    (SELECT COUNT(*) FROM FavArticles WHERE article=a.slug) as favorites_count,\n    EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$2) as fav,\n    EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=a.author) as following,\n    (SELECT string_agg(tag, ' ') FROM ArticleTags WHERE article = a.slug) as tag_list\nFROM Articles as a\n    JOIN Users as u ON u.username = a.author\n    JOIN FavArticles as fa ON fa.article = a.slug and fa.username = $1"
+  },
   "9a498ed98a10f033ca1d41c2004d7fe7b9a9ebec821a5194c20ef552a529b02f": {
     "describe": {
       "columns": [
@@ -554,69 +629,6 @@
       }
     },
     "query": "DELETE FROM Articles WHERE slug=$1 and author=$2"
-  },
-  "b6fa79171967c2855d9fcbe071dd5f34a6ea7855e94a2cc615737ade48635a83": {
-    "describe": {
-      "columns": [
-        {
-          "name": "slug",
-          "ordinal": 0,
-          "type_info": "Text"
-        },
-        {
-          "name": "title",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "description",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "favorites_count",
-          "ordinal": 4,
-          "type_info": "Int8"
-        },
-        {
-          "name": "fav",
-          "ordinal": 5,
-          "type_info": "Bool"
-        },
-        {
-          "name": "following",
-          "ordinal": 6,
-          "type_info": "Bool"
-        },
-        {
-          "name": "tag_list",
-          "ordinal": 7,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        null,
-        null,
-        null,
-        null
-      ],
-      "parameters": {
-        "Left": [
-          "Text",
-          "Text"
-        ]
-      }
-    },
-    "query": "\nSELECT \n    a.slug,\n    a.title,\n    a.description,\n    a.created_at,\n    (SELECT COUNT(*) FROM FavArticles WHERE article=a.slug) as favorites_count,\n    EXISTS(SELECT 1 FROM FavArticles WHERE article=a.slug and username=$2) as fav,\n    EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=a.author) as following,\n    (SELECT string_agg(tag, ' ') FROM ArticleTags WHERE article = a.slug) as tag_list\nFROM Articles as a\n    JOIN FavArticles as fa ON fa.article = a.slug and fa.username = $1"
   },
   "cfe53c0aa11dc6361eee6913819c73761ab0c8355b6b2b73ed840322e565cd08": {
     "describe": {
