@@ -66,6 +66,7 @@ pub struct ArticleForm {
     tag_list: Option<String>,
 }
 
+#[derive(Serialize)]
 struct ArticleUpdate {
     title: String,
     description: String,
@@ -92,9 +93,23 @@ pub async fn editor_post(
                 return crate::template::render_template("editor.j2", session, &mut context);
             }
         };
-        update_article(author, path_params, article, pool)
-            .await
-            .unwrap()
+        match update_article(author, &path_params, &article, pool).await {
+            Ok(x) => x,
+            Err(e) => {
+                let mut context = tera::Context::new();
+                context.insert("slug", &path_params.slug);
+                context.insert("article", &article);
+                if e.to_string().contains("duplicate key") {
+                    context.insert(
+                        "error",
+                        "There's another article with that same title already",
+                    );
+                } else {
+                    context.insert("error", "Problem during creation of the article");
+                }
+                return crate::template::render_template("editor.j2", session, &mut context);
+            }
+        }
     } else {
         // Not authenticated
         return HttpResponse::build(StatusCode::FOUND)
@@ -144,8 +159,8 @@ fn validate_article(article_form: ArticleForm) -> Result<ArticleUpdate, String> 
 
 async fn update_article(
     author: String,
-    path_params: web::Path<PathInfo>,
-    article: ArticleUpdate,
+    path_params: &web::Path<PathInfo>,
+    article: &ArticleUpdate,
     pool: web::Data<sqlx::PgPool>,
 ) -> Result<String, sqlx::Error> {
     let mut transaction = pool.begin().await?;
@@ -181,7 +196,7 @@ async fn update_article(
     if !article.tag_list.is_empty() {
         let mut qb = sqlx::QueryBuilder::new("INSERT INTO ArticleTags(article, tag) ");
         qb.push_values(
-            article.tag_list.into_iter().take(BIND_LIMIT / 2),
+            article.tag_list.clone().into_iter().take(BIND_LIMIT / 2),
             |mut b, tag| {
                 b.push_bind(slug.clone()).push_bind(tag);
             },
