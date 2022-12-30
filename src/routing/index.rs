@@ -1,6 +1,6 @@
 use super::db_models::{ArticlePreview, User};
 use actix_web::{web, Responder};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 pub struct QueryInfo {
@@ -8,6 +8,14 @@ pub struct QueryInfo {
     amount: Option<u32>,
     tag: Option<String>,
     myfeed: Option<bool>,
+}
+
+#[derive(Serialize)]
+struct Query {
+    page: u32,
+    amount: u32,
+    tag: String,
+    myfeed: bool,
 }
 
 pub async fn index(
@@ -80,7 +88,14 @@ LIMIT $1 OFFSET $2",
     let mut context = tera::Context::new();
     context.insert("tags", &tags);
     context.insert("articles", &articles);
-    context.insert("myfeed", &query_params.myfeed.is_some());
-    context.insert("tag", &query_params.tag);
+    context.insert(
+        "params",
+        &Query {
+            page: query_params.page.unwrap_or(1),
+            amount: query_params.amount.unwrap_or(10),
+            tag: query_params.tag.clone().unwrap_or_default(),
+            myfeed: query_params.myfeed.unwrap_or_default(),
+        },
+    );
     crate::template::render_template("index.j2", session, &mut context)
 }

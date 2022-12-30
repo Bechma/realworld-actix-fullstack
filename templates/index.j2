@@ -20,20 +20,30 @@ Conduit
                 <div class="feed-toggle">
                     <ul class="nav nav-pills outline-active">
                         <li class="nav-item">
-                            <a class="nav-link{% if not username %} disabled{% elif myfeed %} active{% endif %}" {% if
-                                username %}href="{{routes['index'] ~ '?myfeed=true'}}" {% endif %}>Your Feed</a>
+                            <a class="nav-link{% if not username %} disabled{% elif params.myfeed %} active{% endif %}"
+                                {% if username %}href="{{routes['index']}}?myfeed=true&amount={{params.amount}}" {%
+                                endif %}>Your Feed</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link{% if not myfeed %} active{% endif %}" href="{{routes['index']}}">Global
+                            <a class="nav-link{% if not params.myfeed %} active{% endif %}"
+                                href="{{routes['index']}}?amount={{params.amount}}">Global
                                 Feed</a>
+                        </li>
+                        <li class="nav-item pull-xs-right">
+                            <form action="{{routes['index']}}" method="get" style="display: inline-block;">
+                                <input type="hidden" name="page" value="{{params.page}}">
+                                {% if params.myfeed %}<input type="hidden" name="myfeed" value="true">{% endif %}
+                                {% if params.tag %}<input type="hidden" name="tag" value="{{params.tag}}">{% endif %}
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Articles to
+                                    display</button>
+                                <input style="width: 4em" type="number" name="amount" value="{{params.amount}}">
+                            </form>
                         </li>
                     </ul>
                 </div>
 
                 {% for a in articles %}
-                <div class="article-preview">
-                    {{macros::preview(article=a)}}
-                </div>
+                {{macros::preview(article=a)}}
                 {% endfor %}
             </div>
 
@@ -43,16 +53,36 @@ Conduit
 
                     <div class="tag-list">
                         {% for t in tags %}
-                        {% if tag == t %}
-                        <a href="{{routes['index']}}" class="tag-pill tag-default tag-primary">{{t}}</a>
+                        {% if params.tag == t %}
+                        <a href="{{routes['index']}}?amount={{params.amount}}"
+                            class="tag-pill tag-default tag-primary">{{t}}</a>
                         {% else %}
-                        <a href="{{routes['index'] ~ '?tag=' ~ t}}" class="tag-pill tag-default">{{t}}</a>
+                        <a href="{{routes['index']}}?amount={{params.amount}}&tag={{t}}"
+                            class="tag-pill tag-default">{{t}}</a>
                         {% endif %}
 
                         {% endfor %}
                     </div>
                 </div>
             </div>
+            <ul class="pagination">
+                {% if params.page and params.page > 1 %}
+                <li class="page-item">
+                    <a class="btn btn-primary"
+                        href="{{routes['index']}}?page={{params.page-1}}&amount={{params.amount}}&myfeed={{params.myfeed}}{%if params.tag %}&tag={{params.tag}}{% endif %}">
+                        &lt;&lt; Previous page
+                    </a>
+                </li>
+                {% endif %}
+                {% if params.amount and articles | length == params.amount%}
+                <li class="page-item">
+                    <a class="btn btn-primary"
+                        href="{{routes['index']}}?page={{params.page+1}}&amount={{params.amount}}&myfeed={{params.myfeed}}{%if params.tag %}&tag={{params.tag}}{% endif %}">
+                        Next page &gt;&gt;
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
         </div>
     </div>
 </div>

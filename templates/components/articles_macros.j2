@@ -37,7 +37,6 @@
     {% elif username %}
     {{buttons::follow(user=article.author.username, following=article.author.following)}}
     {{buttons::fav(article=article)}}
-    </form>
     {% endif %}
 </div>
 {% endmacro metadata %}
