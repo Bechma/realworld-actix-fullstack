@@ -4,9 +4,8 @@ use actix_web::{
 };
 
 use crate::routing::ROUTES;
-lazy_static::lazy_static! {
-    pub static ref TEMPLATES: once_cell::sync::OnceCell<tera::Tera> = once_cell::sync::OnceCell::new();
-}
+
+pub static TEMPLATES: once_cell::sync::OnceCell<tera::Tera> = once_cell::sync::OnceCell::new();
 
 pub fn render_template(
     template: &str,

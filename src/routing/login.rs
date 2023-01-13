@@ -51,10 +51,7 @@ pub async fn login_post(
             return login_template(session, true).await;
         }
     }
-    transaction
-        .rollback()
-        .await
-        .unwrap_or_else(|x| println!("{}", x));
+    transaction.rollback().await.unwrap();
     login_template(session, true).await
 }
 

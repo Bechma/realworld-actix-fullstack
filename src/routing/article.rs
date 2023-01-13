@@ -42,7 +42,6 @@ pub async fn article(
     }
     if let Ok(comments) = get_comments(&mut conn, &path_params.slug).await {
         context.insert("comments", &comments);
-        println!("{:?}", comments);
     }
     crate::template::render_template("article.j2", session, &mut context)
 }

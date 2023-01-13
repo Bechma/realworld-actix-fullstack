@@ -61,7 +61,7 @@ pub async fn comments_create(
 ) -> impl Responder {
     let comment = create_comment(session, &path_params.slug, &article_form.body, pool)
         .await
-        .map(|x| format!("#comment-{}", x))
+        .map(|x| format!("#comment-{x}"))
         .unwrap_or_default();
 
     HttpResponse::build(StatusCode::FOUND)
