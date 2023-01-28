@@ -18,10 +18,17 @@ async fn main() -> std::io::Result<()> {
         .connect(&std::env::var("DATABASE_URL").expect("DATABASE_URL environment is not set"))
         .await
         .expect("database connection can't be done");
+
+    // Required extension
     pool.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
         .await
         .expect("pgcrypto not available");
-    sqlx::migrate!().run(&pool).await.expect("migrations done");
+
+    // Do migrations before the startup
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .expect("migrations failed");
 
     TEMPLATES
         .set({
