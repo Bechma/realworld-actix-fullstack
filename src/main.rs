@@ -1,66 +1,70 @@
-use std::os::unix::prelude::OsStrExt;
-
 use crate::routing::apply_routes;
 use crate::template::TEMPLATES;
-use actix_web::{middleware::Logger, App, HttpServer};
+use actix_web::middleware::Logger;
 
 mod auth;
 mod routing;
 mod template;
-use env_logger::Env;
-use sqlx::{postgres::PgPoolOptions, Executor};
+use sqlx::Executor;
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    dotenvy::dotenv().expect("dotenv is not loaded");
-    env_logger::init_from_env(Env::default().default_filter_or("debug"));
-    let pool = PgPoolOptions::new()
-        .connect(&std::env::var("DATABASE_URL").expect("DATABASE_URL environment is not set"))
-        .await
-        .expect("database connection can't be done");
+use actix_web::web::ServiceConfig;
+use anyhow::anyhow;
+use shuttle_actix_web::ShuttleActixWeb;
 
-    // Required extension
+#[shuttle_runtime::main]
+async fn actix_web(
+    #[shuttle_shared_db::Postgres] pool: sqlx::PgPool,
+    #[shuttle_secrets::Secrets] secret_store: shuttle_secrets::SecretStore,
+    #[shuttle_static_folder::StaticFolder(folder = "templates")] static_folder: std::path::PathBuf,
+) -> ShuttleActixWeb<impl FnOnce(&mut ServiceConfig) + Send + Clone + 'static> {
     pool.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
         .await
-        .expect("pgcrypto not available");
+        .map_err(|x| anyhow!(x.to_string()))?;
 
-    // Do migrations before the startup
     sqlx::migrate!()
         .run(&pool)
         .await
-        .expect("migrations failed");
+        .map_err(|x| anyhow!(x.to_string()))?;
+
+    let Some(secret) = secret_store.get("COOKIE_SECRET") else {
+        return Err(anyhow!("secret was not found").into());
+    };
 
     TEMPLATES
         .set({
-            let mut tera = tera::Tera::new("templates/**/*")
-                .expect("Parsing error while loading template folder");
+            let mut tera =
+                tera::Tera::new((static_folder.to_str().unwrap().to_string() + "/**/*").as_str())
+                    .expect("Parsing error while loading template folder");
             tera.autoescape_on(vec!["j2"]);
             tera
         })
-        .expect("cannot initialize tera");
+        .expect("tera instance couldn't initialize");
 
     let session_key = actix_web::cookie::Key::from(
-        std::env::var_os("COOKIE_SECRET")
-            .expect("cookie secret not set")
-            .as_bytes(),
+        (0..secret.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&secret[i..i + 2], 16).unwrap())
+            .collect::<Vec<u8>>()
+            .as_slice(),
     );
 
-    HttpServer::new(move || {
-        App::new()
-            .app_data(actix_web::web::Data::new(pool.clone()))
-            .wrap(
-                actix_session::SessionMiddleware::builder(
-                    actix_session::storage::CookieSessionStore::default(),
-                    session_key.clone(),
+    let config = move |cfg: &mut ServiceConfig| {
+        cfg.service(
+            actix_web::web::scope("")
+                .app_data(actix_web::web::Data::new(pool.clone()))
+                .wrap(
+                    actix_session::SessionMiddleware::builder(
+                        actix_session::storage::CookieSessionStore::default(),
+                        session_key.clone(),
+                    )
+                    .cookie_name("session".into())
+                    .cookie_secure(true)
+                    .build(),
                 )
-                .cookie_name("session".into())
-                .cookie_secure(std::env::var_os("PRODUCTION").is_some())
-                .build(),
-            )
-            .wrap(Logger::default())
-            .configure(apply_routes)
-    })
-    .bind(("127.0.0.1", 8080))?
-    .run()
-    .await
+                .wrap(Logger::default())
+                .configure(apply_routes),
+        );
+    };
+
+    Ok(config.into())
 }

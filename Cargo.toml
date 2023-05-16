@@ -21,9 +21,10 @@ serde_json = "1"
 anyhow = "1"
 regex = "1"
 
-shuttle-service = { version = "0.8", features = ["web-actix-web"] }
-shuttle-shared-db = { version = "0.8", features = ["postgres"] }
-shuttle-secrets = "0.8"
-shuttle-static-folder = "0.8"
+shuttle-runtime = "0.16"
+shuttle-actix-web = "0.16"
+shuttle-shared-db = { version = "0.16", features = ["postgres"] }
+shuttle-secrets = "0.16"
+shuttle-static-folder = "0.16"
 
 once_cell = "1"
