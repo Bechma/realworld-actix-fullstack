@@ -12,8 +12,6 @@ actix-session = { version = "0.7", features = ["cookie-session"] }
 sqlx = { version = "0.6", features = [ "runtime-actix-native-tls" , "postgres", "chrono", "offline" ] }
 chrono = { version = "0.4", features = [ "serde" ]}
 tokio = "1"
-env_logger = "0.10"
-dotenvy = "0.15"
 tera = "1"
 lazy_static = "*"
 serde = { version = "1", features = ["derive"] }

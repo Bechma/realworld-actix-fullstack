@@ -4,39 +4,30 @@ You can check it online in https://realworld-fullstack.shuttleapp.rs/
 
 ## How to run it
 
-1. Get a database running
+It's important to have docker installed. I'm using a brand new serverless approach for rust applications:
+[shuttle](https://www.shuttle.rs/). At this moment is in alpha but it looks promising:
 
 ```bash
-docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 --name postgres postgres
-```
-
-2. Create a .env file from the example
-
-```bash
+cargo install cargo-shuttle
+cp Secrets.toml.example Secrets.toml
 cp .env.example .env
-```
-
-3. Run the application in offline mode(it will execute migrations and setup required postgres extension)
-
-```bash
-SQLX_OFFLINE=true cargo run
+cargo shuttle run
 ```
 
 ## How to test it
 
-Make sure that you have the database setup from the previous steps and just run
+You will need a postgres database up and running locally in order to execute tests:
 
 ```bash
+docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 --name postgres postgres
 cargo test
 ```
 
 ## How to deploy it
 
-I'm using a brand new serverless approach for rust applications: [shuttle](https://www.shuttle.rs/). At this moment is in alpha but it looks promising:
 
 1. Test the deploy locally:
 ```bash
-cargo install cargo-shuttle
 cargo shuttle login --api-key YOUR_API_KEY_HERE
 SQLX_OFFLINE=true cargo shuttle run
 ```

@@ -8,7 +8,7 @@ mod template;
 use sqlx::Executor;
 
 use actix_web::web::ServiceConfig;
-use anyhow::anyhow;
+use anyhow::Context;
 use shuttle_actix_web::ShuttleActixWeb;
 
 #[shuttle_runtime::main]
@@ -19,26 +19,32 @@ async fn actix_web(
 ) -> ShuttleActixWeb<impl FnOnce(&mut ServiceConfig) + Send + Clone + 'static> {
     pool.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
         .await
-        .map_err(|x| anyhow!(x.to_string()))?;
+        .context("cannot create required extension")?;
 
     sqlx::migrate!()
         .run(&pool)
         .await
-        .map_err(|x| anyhow!(x.to_string()))?;
+        .context("cannot generate migrations")?;
 
-    let Some(secret) = secret_store.get("COOKIE_SECRET") else {
-        return Err(anyhow!("secret was not found").into());
-    };
+    let secret = secret_store
+        .get("COOKIE_SECRET")
+        .context("secret was not found")?;
 
     TEMPLATES
         .set({
-            let mut tera =
-                tera::Tera::new((static_folder.to_str().unwrap().to_string() + "/**/*").as_str())
-                    .expect("Parsing error while loading template folder");
+            let mut tera = tera::Tera::new(
+                (static_folder
+                    .to_str()
+                    .context("cannot get static folder")?
+                    .to_string()
+                    + "/**/*")
+                    .as_str(),
+            )
+            .context("Parsing error while loading template folder")?;
             tera.autoescape_on(vec!["j2"]);
             tera
         })
-        .expect("tera instance couldn't initialize");
+        .map_err(|x| anyhow::anyhow!("tera instance couldn't initialize due to: {:?}", x))?;
 
     let session_key = actix_web::cookie::Key::from(
         (0..secret.len())
