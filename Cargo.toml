@@ -3,9 +3,6 @@ name = "realworld-rust-fullstack"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[lib]
-
 [dependencies]
 actix-web = "4"
 actix-session = { version = "0.7", features = ["cookie-session"] }
