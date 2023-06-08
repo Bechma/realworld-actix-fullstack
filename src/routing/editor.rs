@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-use super::ROUTES;
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
@@ -16,10 +15,14 @@ pub async fn editor_get(
     session: actix_session::Session,
     path_params: web::Path<PathInfo>,
     pool: web::Data<sqlx::PgPool>,
+    state: web::Data<crate::state::AppState>,
 ) -> impl Responder {
-    if crate::auth::get_session_username(&session).is_none() {
+    if crate::utils::get_session_username(&session).is_none() {
         return HttpResponse::build(StatusCode::FOUND)
-            .insert_header((actix_web::http::header::LOCATION, ROUTES["login"].as_str()))
+            .insert_header((
+                actix_web::http::header::LOCATION,
+                state.route_from_enum(super::RoutesEnum::Login),
+            ))
             .finish();
     }
     let article = if let Some(slug) = &path_params.slug {
@@ -54,7 +57,9 @@ FROM Articles a WHERE slug = $1",
     let mut context = tera::Context::new();
     context.insert("slug", &article.slug);
     context.insert("article", &article);
-    crate::template::render_template("editor.j2", session, &mut context)
+    state
+        .render_template("editor.j2", session, &mut context)
+        .unwrap()
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -81,8 +86,9 @@ pub async fn editor_post(
     path_params: web::Path<PathInfo>,
     article_form: web::Form<ArticleForm>,
     pool: web::Data<sqlx::PgPool>,
+    state: web::Data<crate::state::AppState>,
 ) -> impl Responder {
-    let slug = if let Some(author) = crate::auth::get_session_username(&session) {
+    let slug = if let Some(author) = crate::utils::get_session_username(&session) {
         let article = match validate_article(article_form.clone()) {
             Ok(x) => x,
             Err(e) => {
@@ -90,7 +96,9 @@ pub async fn editor_post(
                 context.insert("slug", &path_params.slug);
                 context.insert("article", &article_form);
                 context.insert("error", &e);
-                return crate::template::render_template("editor.j2", session, &mut context);
+                return state
+                    .render_template("editor.j2", session, &mut context)
+                    .unwrap();
             }
         };
         match update_article(author, &path_params, &article, pool).await {
@@ -107,20 +115,29 @@ pub async fn editor_post(
                 } else {
                     context.insert("error", "Problem during creation of the article");
                 }
-                return crate::template::render_template("editor.j2", session, &mut context);
+                return state
+                    .render_template("editor.j2", session, &mut context)
+                    .unwrap();
             }
         }
     } else {
         // Not authenticated
         return HttpResponse::build(StatusCode::FOUND)
-            .insert_header((actix_web::http::header::LOCATION, ROUTES["index"].as_str()))
+            .insert_header((
+                actix_web::http::header::LOCATION,
+                state.route_from_enum(super::RoutesEnum::Index),
+            ))
             .finish();
     };
 
     HttpResponse::build(StatusCode::FOUND)
         .append_header((
             actix_web::http::header::LOCATION,
-            format!("{}/{}", ROUTES["article"], slug),
+            format!(
+                "{}/{}",
+                state.route_from_enum(super::RoutesEnum::Article),
+                slug
+            ),
         ))
         .finish()
 }

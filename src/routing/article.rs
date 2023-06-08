@@ -1,10 +1,7 @@
 use actix_web::{http::StatusCode, web, HttpResponse, Responder};
 use serde::Deserialize;
 
-use super::{
-    db_models::{ArticleFull, Comments, User},
-    ROUTES,
-};
+use super::db_models::{ArticleFull, Comments, User};
 
 #[derive(Deserialize)]
 pub struct PathInfo {
@@ -15,9 +12,10 @@ pub async fn article(
     session: actix_session::Session,
     path_params: web::Path<PathInfo>,
     pool: web::Data<sqlx::PgPool>,
+    state: web::Data<crate::state::AppState>,
 ) -> impl Responder {
     let mut conn = pool.acquire().await.unwrap();
-    let username = crate::auth::get_session_username(&session);
+    let username = crate::utils::get_session_username(&session);
     let Ok(article) = get_article(&mut conn, &path_params.slug, username.clone().unwrap_or_default()).await else {
         return HttpResponse::NotFound().finish();
     };
@@ -40,10 +38,13 @@ pub async fn article(
         .unwrap();
         context.insert("user", &user);
     }
-    if let Ok(comments) = get_comments(&mut conn, &path_params.slug).await {
+    let profile_route = state.route_from_enum(super::RoutesEnum::Profile);
+    if let Ok(comments) = get_comments(&mut conn, &path_params.slug, profile_route).await {
         context.insert("comments", &comments);
     }
-    crate::template::render_template("article.j2", session, &mut context)
+    state
+        .render_template("article.j2", session, &mut context)
+        .unwrap()
 }
 
 async fn get_article(
@@ -96,6 +97,7 @@ WHERE slug = $1
 async fn get_comments(
     conn: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
     slug: &str,
+    profile_route: String,
 ) -> Result<Vec<Comments>, sqlx::Error> {
     sqlx::query!(
         "
@@ -106,7 +108,7 @@ WHERE article=$1",
     )
     .map(|x| Comments {
         id: x.id,
-        user_link: ROUTES["profile"].to_string() + "/" + x.username.as_str(),
+        user_link: profile_route.to_string() + "/" + x.username.as_str(),
         article: x.article,
         username: x.username,
         body: x.body,
@@ -121,8 +123,9 @@ pub async fn article_delete(
     session: actix_session::Session,
     path_params: web::Path<PathInfo>,
     pool: web::Data<sqlx::PgPool>,
+    state: web::Data<crate::state::AppState>,
 ) -> impl Responder {
-    if let Some(username) = crate::auth::get_session_username(&session) {
+    if let Some(username) = crate::utils::get_session_username(&session) {
         let mut conn = pool.acquire().await.unwrap();
         sqlx::query!(
             "DELETE FROM Articles WHERE slug=$1 and author=$2",
@@ -137,7 +140,7 @@ pub async fn article_delete(
     HttpResponse::build(StatusCode::FOUND)
         .insert_header((
             actix_web::http::header::LOCATION,
-            ROUTES["index"].to_string(),
+            state.route_from_enum(super::RoutesEnum::Index),
         ))
         .finish()
 }
@@ -147,8 +150,9 @@ pub async fn article_add_favorite(
     path_params: web::Path<PathInfo>,
     request: actix_web::HttpRequest,
     pool: web::Data<sqlx::PgPool>,
+    state: web::Data<crate::state::AppState>,
 ) -> impl Responder {
-    if let Some(username) = crate::auth::get_session_username(&session) {
+    if let Some(username) = crate::utils::get_session_username(&session) {
         let mut conn = pool.acquire().await.unwrap();
         sqlx::query!(
             "INSERT INTO FavArticles(article, username) VALUES ($1, $2) ON CONFLICT DO NOTHING",
@@ -167,7 +171,11 @@ pub async fn article_add_favorite(
                 .headers()
                 .get(actix_web::http::header::REFERER)
                 .map(|x| x.to_str().unwrap().to_string())
-                .unwrap_or_else(|| ROUTES["article"].to_string() + "/" + path_params.slug.as_str()),
+                .unwrap_or_else(|| {
+                    state.route_from_enum(super::RoutesEnum::Article)
+                        + "/"
+                        + path_params.slug.as_str()
+                }),
         ))
         .finish()
 }
@@ -177,8 +185,9 @@ pub async fn article_del_favorite(
     path_params: web::Path<PathInfo>,
     request: actix_web::HttpRequest,
     pool: web::Data<sqlx::PgPool>,
+    state: web::Data<crate::state::AppState>,
 ) -> impl Responder {
-    if let Some(username) = crate::auth::get_session_username(&session) {
+    if let Some(username) = crate::utils::get_session_username(&session) {
         let mut conn = pool.acquire().await.unwrap();
         sqlx::query!(
             "DELETE FROM FavArticles WHERE article=$1 and username=$2",
@@ -197,7 +206,11 @@ pub async fn article_del_favorite(
                 .headers()
                 .get(actix_web::http::header::REFERER)
                 .map(|x| x.to_str().unwrap().to_string())
-                .unwrap_or_else(|| ROUTES["article"].to_string() + "/" + path_params.slug.as_str()),
+                .unwrap_or_else(|| {
+                    state.route_from_enum(super::RoutesEnum::Article)
+                        + "/"
+                        + path_params.slug.as_str()
+                }),
         ))
         .finish()
 }

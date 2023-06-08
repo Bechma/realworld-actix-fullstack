@@ -1,4 +1,3 @@
-use super::ROUTES;
 use actix_web::http::{header, StatusCode};
 use actix_web::{web, HttpResponse, Responder};
 use serde::Deserialize;
@@ -8,8 +7,9 @@ use super::db_models::User;
 pub async fn settings_get(
     session: actix_session::Session,
     pool: web::Data<sqlx::PgPool>,
+    state: web::Data<crate::state::AppState>,
 ) -> impl Responder {
-    if let Some(username) = crate::auth::get_session_username(&session) {
+    if let Some(username) = crate::utils::get_session_username(&session) {
         let mut conn = pool.acquire().await.unwrap();
         let user = sqlx::query!(
             "SELECT username, email, bio, image FROM Users WHERE username=$1",
@@ -28,10 +28,15 @@ pub async fn settings_get(
 
         let mut context = tera::Context::new();
         context.insert("user", &user);
-        return crate::template::render_template("settings.j2", session, &mut context);
+        return state
+            .render_template("settings.j2", session, &mut context)
+            .unwrap();
     }
     HttpResponse::Found()
-        .append_header((header::LOCATION, ROUTES["login"].as_str()))
+        .append_header((
+            header::LOCATION,
+            state.route_from_enum(super::RoutesEnum::Login),
+        ))
         .finish()
 }
 
@@ -49,8 +54,9 @@ pub async fn settings_post(
     session: actix_session::Session,
     form_data: web::Form<FormData>,
     pool: web::Data<sqlx::PgPool>,
+    state: web::Data<crate::state::AppState>,
 ) -> impl Responder {
-    if let Some(username) = crate::auth::get_session_username(&session) {
+    if let Some(username) = crate::utils::get_session_username(&session) {
         let change_password = if !form_data.password.is_empty() {
             if form_data.password != form_data.confirm_password {
                 let mut context = tera::Context::new();
@@ -62,7 +68,9 @@ pub async fn settings_post(
                     following: false,
                 };
                 context.insert("user", &user);
-                return crate::template::render_template("settings.j2", session, &mut context);
+                return state
+                    .render_template("settings.j2", session, &mut context)
+                    .unwrap();
             }
             true
         } else {
@@ -91,6 +99,9 @@ WHERE username=$1",
     }
 
     HttpResponse::build(StatusCode::FOUND)
-        .append_header((actix_web::http::header::LOCATION, ROUTES["index"].as_str()))
+        .append_header((
+            actix_web::http::header::LOCATION,
+            state.route_from_enum(super::RoutesEnum::Index),
+        ))
         .finish()
 }

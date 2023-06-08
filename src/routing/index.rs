@@ -22,11 +22,12 @@ pub async fn index(
     session: actix_session::Session,
     query_params: web::Query<QueryInfo>,
     pool: web::Data<sqlx::PgPool>,
+    state: web::Data<crate::state::AppState>,
 ) -> impl Responder {
     let mut conn = pool.acquire().await.unwrap();
 
     let page = query_params.page.unwrap_or(1).saturating_sub(1) as i64;
-    let username = crate::auth::get_session_username(&session);
+    let username = crate::utils::get_session_username(&session);
     let amount = query_params.amount.unwrap_or(10) as i64;
 
     let articles = sqlx::query!(
@@ -97,5 +98,7 @@ LIMIT $1 OFFSET $2",
             myfeed: query_params.myfeed.unwrap_or_default(),
         },
     );
-    crate::template::render_template("index.j2", session, &mut context)
+    state
+        .render_template("index.j2", session, &mut context)
+        .unwrap()
 }

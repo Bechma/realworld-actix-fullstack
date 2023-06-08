@@ -9,7 +9,7 @@ Register
         <div class="row">
             <div class="col-md-6 offset-md-3 col-xs-12">
                 <h1 class="text-xs-center">Sign up</h1>
-                <p class="text-xs-center"><a href="{{routes['login']}}">Have an account?</a></p>
+                <p class="text-xs-center"><a href="{{routes.login}}">Have an account?</a></p>
 
                 {% if error %}
                 <ul class="error-messages">
@@ -17,7 +17,7 @@ Register
                 </ul>
                 {% endif %}
 
-                <form action="{{routes['register']}}" method="post" name="form_data">
+                <form action="{{routes.register}}" method="post" name="form_data">
                     <fieldset class="form-group">
                         <input name="username" class="form-control form-control-lg" type="text"
                             placeholder="Your Username"

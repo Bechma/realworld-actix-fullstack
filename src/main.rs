@@ -1,10 +1,9 @@
-use crate::routing::apply_routes;
-use crate::template::TEMPLATES;
+use crate::state::AppStateStruct;
 use actix_web::middleware::Logger;
 
-mod auth;
 mod routing;
-mod template;
+mod state;
+mod utils;
 use sqlx::Executor;
 
 use actix_web::web::ServiceConfig;
@@ -30,28 +29,28 @@ async fn actix_web(
         .get("COOKIE_SECRET")
         .context("secret was not found")?;
 
-    TEMPLATES
-        .set({
-            let mut tera = tera::Tera::new(
-                (static_folder
-                    .to_str()
-                    .context("cannot get static folder")?
-                    .to_string()
-                    + "/**/*")
-                    .as_str(),
-            )
-            .context("Parsing error while loading template folder")?;
-            tera.autoescape_on(vec!["j2"]);
-            tera
-        })
-        .map_err(|x| anyhow::anyhow!("tera instance couldn't initialize due to: {:?}", x))?;
+    let state = std::sync::Arc::new(AppStateStruct::new({
+        let mut tera = tera::Tera::new(
+            &(static_folder
+                .to_str()
+                .context("cannot get static folder")?
+                .to_string()
+                + "/**/*"),
+        )
+        .context("Parsing error while loading template folder")?;
+        tera.autoescape_on(vec!["j2"]);
+        tera
+    }));
 
     let session_key = actix_web::cookie::Key::from(secret.as_bytes());
 
     let config = move |cfg: &mut ServiceConfig| {
+        let state = state.clone();
+        let conf = state.apply_routes();
         cfg.service(
             actix_web::web::scope("")
                 .app_data(actix_web::web::Data::new(pool.clone()))
+                .app_data(actix_web::web::Data::new(state))
                 .wrap(
                     actix_session::SessionMiddleware::builder(
                         actix_session::storage::CookieSessionStore::default(),
@@ -62,7 +61,7 @@ async fn actix_web(
                     .build(),
                 )
                 .wrap(Logger::default())
-                .configure(apply_routes),
+                .configure(conf),
         );
     };
 

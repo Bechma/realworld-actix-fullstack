@@ -10,14 +10,13 @@ sqlx = { version = "0.6", features = [ "runtime-actix-native-tls" , "postgres", 
 chrono = { version = "0.4", features = [ "serde" ]}
 tokio = "1"
 tera = "1"
-lazy_static = "*"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
 regex = "1"
 
-shuttle-runtime = "0.16"
-shuttle-actix-web = "0.16"
-shuttle-shared-db = { version = "0.16", features = ["postgres"] }
-shuttle-secrets = "0.16"
-shuttle-static-folder = "0.16"
+shuttle-runtime = "0.18"
+shuttle-actix-web = "0.18"
+shuttle-shared-db = { version = "0.18", features = ["postgres"] }
+shuttle-secrets = "0.18"
+shuttle-static-folder = "0.18"

@@ -1,6 +1,6 @@
 use super::db_models::{ArticlePreview, User};
-use super::ROUTES;
 use actix_web::http::StatusCode;
+use actix_web::web::Data;
 use actix_web::{web, HttpResponse, Responder};
 use serde::Deserialize;
 
@@ -19,9 +19,10 @@ pub async fn user_profile(
     path_params: web::Path<PathInfo>,
     query_params: web::Query<QueryInfo>,
     pool: web::Data<sqlx::PgPool>,
+    state: Data<crate::state::AppState>,
 ) -> impl Responder {
     let mut conn = pool.acquire().await.unwrap();
-    let logged_user = crate::auth::get_session_username(&session).unwrap_or_default();
+    let logged_user = crate::utils::get_session_username(&session).unwrap_or_default();
 
     let Some(user) = sqlx::query!(
         "SELECT username, email, bio, image, EXISTS(SELECT 1 FROM Follows WHERE follower=$2 and influencer=$1) as following FROM Users where username=$1",
@@ -117,13 +118,20 @@ WHERE a.author = $1",
     let mut context = tera::Context::new();
     context.insert(
         "current",
-        format!("{}/{}", ROUTES["profile"], path_params.username).as_str(),
+        format!(
+            "{}/{}",
+            state.route_from_enum(super::RoutesEnum::Profile),
+            path_params.username
+        )
+        .as_str(),
     );
     context.insert("user", &user);
     context.insert("articles", &articles);
     context.insert("favourites", &query_params.favourites.is_some());
 
-    crate::template::render_template("profile.j2", session, &mut context)
+    state
+        .render_template("profile.j2", session, &mut context)
+        .unwrap()
 }
 
 pub async fn follower_up(
@@ -131,8 +139,9 @@ pub async fn follower_up(
     path_params: web::Path<PathInfo>,
     request: actix_web::HttpRequest,
     pool: web::Data<sqlx::PgPool>,
+    state: Data<crate::state::AppState>,
 ) -> impl Responder {
-    if let Some(username) = crate::auth::get_session_username(&session) {
+    if let Some(username) = crate::utils::get_session_username(&session) {
         let mut conn = pool.acquire().await.unwrap();
         sqlx::query!(
             "INSERT INTO Follows(follower, influencer) VALUES ($1, $2) ON CONFLICT DO NOTHING",
@@ -152,7 +161,9 @@ pub async fn follower_up(
                 .get(actix_web::http::header::REFERER)
                 .map(|x| x.to_str().unwrap().to_string())
                 .unwrap_or_else(|| {
-                    ROUTES["profile"].to_string() + "/" + path_params.username.as_str()
+                    state.route_from_enum(super::RoutesEnum::Profile)
+                        + "/"
+                        + path_params.username.as_str()
                 }),
         ))
         .finish()
@@ -163,8 +174,9 @@ pub async fn follower_down(
     path_params: web::Path<PathInfo>,
     request: actix_web::HttpRequest,
     pool: web::Data<sqlx::PgPool>,
+    state: Data<crate::state::AppState>,
 ) -> impl Responder {
-    if let Some(username) = crate::auth::get_session_username(&session) {
+    if let Some(username) = crate::utils::get_session_username(&session) {
         let mut conn = pool.acquire().await.unwrap();
         sqlx::query!(
             "DELETE FROM Follows WHERE follower=$1 and influencer=$2",
@@ -184,7 +196,9 @@ pub async fn follower_down(
                 .get(actix_web::http::header::REFERER)
                 .map(|x| x.to_str().unwrap().to_string())
                 .unwrap_or_else(|| {
-                    ROUTES["profile"].to_string() + "/" + path_params.username.as_str()
+                    state.route_from_enum(super::RoutesEnum::Profile)
+                        + "/"
+                        + path_params.username.as_str()
                 }),
         ))
         .finish()

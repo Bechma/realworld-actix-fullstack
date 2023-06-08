@@ -14,46 +14,45 @@
 </head>
 
 <body>
+    {% set index = routes.index -%}
     <nav class="navbar navbar-light">
         <div class="container">
-            <a class="navbar-brand" href="{{routes['index']}}">conduit</a>
+            <a class="navbar-brand" href="{{index}}">conduit</a>
             <ul class="nav navbar-nav pull-xs-right">
                 <li class="nav-item">
-                    <a class="nav-link{% if current == routes['index'] %} active{% endif %}"
-                        href="{{routes['index']}}"><i class="ion-home"></i>&nbsp;Home</a>
+                    <a class="nav-link{% if current == index %} active{% endif %}" href="{{index}}"><i
+                            class="ion-home"></i>&nbsp;Home</a>
                 </li>
                 {% if username %}
                 <li class="nav-item">
-                    <a class="nav-link{% if current == routes['editor'] %} active{% endif %}"
-                        href="{{routes['editor']}}">
+                    <a class="nav-link{% if current == routes.editor %} active{% endif %}" href="{{routes.editor}}">
                         <i class="ion-compose"></i>&nbsp;New Article
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link{% if current == routes['settings'] %} active{% endif %}"
-                        href="{{routes['settings']}}">
+                    <a class="nav-link{% if current == routes.settings %} active{% endif %}" href="{{routes.settings}}">
                         <i class="ion-gear-a"></i>&nbsp;Settings
                     </a>
                 </li>
-                {% set profile_path = routes['profile'] ~ '/' ~ username -%}
+                {% set profile_path = routes.profile ~ '/' ~ username -%}
                 <li class="nav-item">
                     <a class="nav-link{% if current == profile_path %} active{% endif %}" href="{{profile_path}}"><i
                             class="ion-person"></i> {{username}}</a>
                 </li>
                 <li class="nav-item">
-                    <form action="{{routes['logout']}}" method="post">
+                    <form action="{{routes.logout}}" method="post">
                         <button type="submit" class="nav-link" style="background: none; border: none;"><i
                                 class="ion-log-out"></i>&nbsp;Logout</button>
                     </form>
                 </li>
                 {% else %}
                 <li class="nav-item">
-                    <a class="nav-link{% if current == routes['login'] %} active{% endif %}"
-                        href="{{routes['login']}}"><i class="ion-log-in"></i> Sign in</a>
+                    <a class="nav-link{% if current == routes.login %} active{% endif %}" href="{{routes.login}}"><i
+                            class="ion-log-in"></i> Sign in</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link{% if current == routes['register'] %} active{% endif %}"
-                        href="{{routes['register']}}">Sign up</a>
+                    <a class="nav-link{% if current == routes.register %} active{% endif %}"
+                        href="{{routes.register}}">Sign up</a>
                 </li>
                 {% endif %}
             </ul>
@@ -62,7 +61,7 @@
     {% block content %}{% endblock content %}
     <footer>
         <div class="container">
-            <a href="{{routes['index']}}" class="logo-font">conduit</a>
+            <a href="{{index}}" class="logo-font">conduit</a>
             <span class="attribution">
                 An interactive learning project from <a href="https://thinkster.io">Thinkster</a>. Code &amp; design
                 licensed under MIT.

@@ -11,7 +11,7 @@
             <p class="col-md-10 offset-md-1 col-xs-12 error-messages">{{error}}</p>
             {% endif %}
             <div class="col-md-10 offset-md-1 col-xs-12">
-                <form method="post" action="{{routes['editor']}}{% if slug and slug != '' %}/{{slug}}{% endif %}">
+                <form method="post" action="{{routes.editor}}{% if slug and slug != '' %}/{{slug}}{% endif %}">
                     <fieldset>
                         <fieldset class="form-group">
                             <input name="title" type="text" class="form-control form-control-lg"

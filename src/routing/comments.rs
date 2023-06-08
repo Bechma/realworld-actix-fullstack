@@ -1,4 +1,3 @@
-use super::ROUTES;
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, Responder};
 use serde::Deserialize;
@@ -13,13 +12,18 @@ pub async fn comments_delete(
     session: actix_session::Session,
     path_params: web::Path<PathDelInfo>,
     pool: web::Data<sqlx::PgPool>,
+    state: web::Data<crate::state::AppState>,
 ) -> impl Responder {
     remove_comment(session, &path_params, pool).await;
 
     HttpResponse::build(StatusCode::FOUND)
         .insert_header((
             actix_web::http::header::LOCATION,
-            format!("{}/{}", ROUTES["article"], path_params.slug),
+            format!(
+                "{}/{}",
+                state.route_from_enum(super::RoutesEnum::Article),
+                path_params.slug
+            ),
         ))
         .finish()
 }
@@ -29,7 +33,7 @@ async fn remove_comment(
     path_params: &web::Path<PathDelInfo>,
     pool: web::Data<sqlx::PgPool>,
 ) -> Option<sqlx::Error> {
-    let username = crate::auth::get_session_username(&session)?;
+    let username = crate::utils::get_session_username(&session)?;
     let mut conn = pool.acquire().await.unwrap();
     sqlx::query!(
         "DELETE FROM Comments WHERE id=$1 and article=$2 and username=$3",
@@ -58,6 +62,7 @@ pub async fn comments_create(
     path_params: web::Path<PathCreateInfo>,
     article_form: web::Form<CommentsForm>,
     pool: web::Data<sqlx::PgPool>,
+    state: web::Data<crate::state::AppState>,
 ) -> impl Responder {
     let comment = create_comment(session, &path_params.slug, &article_form.body, pool)
         .await
@@ -67,7 +72,12 @@ pub async fn comments_create(
     HttpResponse::build(StatusCode::FOUND)
         .insert_header((
             actix_web::http::header::LOCATION,
-            format!("{}/{}{}", ROUTES["article"], path_params.slug, comment),
+            format!(
+                "{}/{}{}",
+                state.route_from_enum(super::RoutesEnum::Article),
+                path_params.slug,
+                comment
+            ),
         ))
         .finish()
 }
@@ -81,7 +91,7 @@ async fn create_comment(
     if body.is_empty() {
         return None;
     }
-    let username = crate::auth::get_session_username(&session)?;
+    let username = crate::utils::get_session_username(&session)?;
     let mut conn = pool.acquire().await.unwrap();
     Some(
         sqlx::query!(

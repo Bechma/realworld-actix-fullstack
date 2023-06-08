@@ -2,7 +2,6 @@ use actix_web::{
     dev::{ServiceFactory, ServiceRequest, ServiceResponse},
     App,
 };
-use realworld_rust_fullstack::{apply_routes, TEMPLATES};
 use sqlx::{postgres::PgPoolOptions, Executor};
 
 pub async fn get_test_pool() -> sqlx::PgPool {
@@ -26,12 +25,13 @@ pub async fn create_server() -> App<
         InitError = (),
     >,
 > {
-    TEMPLATES.set({
+    let state = std::sync::Arc::new(realworld_rust_fullstack::AppStateStruct::new({
         let mut tera =
             tera::Tera::new("templates/**/*").expect("Parsing error while loading template folder");
         tera.autoescape_on(vec!["j2"]);
         tera
-    });
+    }));
+    let configure = state.apply_routes();
     let pool = get_test_pool().await;
     sqlx::migrate!().undo(&pool, i64::MAX).await.unwrap();
     sqlx::migrate!().run(&pool).await.unwrap();
@@ -39,6 +39,7 @@ pub async fn create_server() -> App<
     let session_key = actix_web::cookie::Key::from("1".repeat(512).as_bytes());
     App::new()
         .app_data(actix_web::web::Data::new(pool.clone()))
+        .app_data(actix_web::web::Data::new(state.clone()))
         .wrap(
             actix_session::SessionMiddleware::builder(
                 actix_session::storage::CookieSessionStore::default(),
@@ -48,5 +49,5 @@ pub async fn create_server() -> App<
             .cookie_secure(false)
             .build(),
         )
-        .configure(apply_routes)
+        .configure(configure)
 }

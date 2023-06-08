@@ -1,15 +1,19 @@
-use super::ROUTES;
 use actix_web::http::StatusCode;
 use actix_web::web::Data;
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
-pub async fn register_get(session: actix_session::Session) -> impl Responder {
-    if let Some(x) = crate::auth::redirect_to_profile(&session) {
+pub async fn register_get(
+    session: actix_session::Session,
+    state: Data<crate::state::AppState>,
+) -> impl Responder {
+    if let Some(x) = state.redirect_to_profile(&session) {
         return x;
     }
     let mut context = tera::Context::new();
-    crate::template::render_template("register.j2", session, &mut context)
+    state
+        .render_template("register.j2", session, &mut context)
+        .unwrap()
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -29,17 +33,20 @@ pub async fn register_post(
     session: actix_session::Session,
     form_data: web::Form<FormData>,
     pool: Data<sqlx::PgPool>,
+    state: Data<crate::state::AppState>,
 ) -> impl Responder {
-    if let Some(x) = crate::auth::redirect_to_profile(&session) {
+    if let Some(x) = state.redirect_to_profile(&session) {
         return x;
     }
-    let form_data = match validate_form(form_data.clone()) {
+    let form_data = match validate_form(form_data.clone(), &state) {
         Ok(x) => x,
         Err(e) => {
             let mut context = tera::Context::new();
             context.insert("error", &e);
             context.insert("reg", &form_data);
-            return crate::template::render_template("register.j2", session, &mut context);
+            return state
+                .render_template("register.j2", session, &mut context)
+                .unwrap();
         }
     };
     let mut transaction = match pool.begin().await {
@@ -48,7 +55,7 @@ pub async fn register_post(
             return HttpResponse::build(StatusCode::FOUND)
                 .insert_header((
                     actix_web::http::header::LOCATION,
-                    ROUTES["register"].as_str(),
+                    state.route_from_enum(super::RoutesEnum::Register),
                 ))
                 .finish()
         }
@@ -64,31 +71,36 @@ pub async fn register_post(
     .is_ok()
         && transaction.commit().await.is_ok()
     {
-        crate::auth::set_cookie_param(&session, form_data.username.to_string()).unwrap();
+        crate::utils::set_cookie_param(&session, form_data.username.to_string()).unwrap();
         return HttpResponse::build(StatusCode::FOUND)
             .insert_header((
                 actix_web::http::header::LOCATION,
-                format!("{}/{}", ROUTES["profile"], form_data.username),
+                format!(
+                    "{}/{}",
+                    state.route_from_enum(super::RoutesEnum::Profile),
+                    form_data.username
+                ),
             ))
             .finish();
     }
     let mut context = tera::Context::new();
     context.insert("error", "User already registered");
-    crate::template::render_template("register.j2", session, &mut context)
+    state
+        .render_template("register.j2", session, &mut context)
+        .unwrap()
 }
 
-fn validate_form(form_data: FormData) -> Result<SignUp, String> {
-    lazy_static::lazy_static! {
-        static ref EMAIL_REGEX: regex::Regex = regex::Regex::new(r"^[\w\-\.]+@([\w-]+\.)+\w{2,4}$").unwrap();
-    }
-
+fn validate_form(
+    form_data: FormData,
+    state: &Data<crate::state::AppState>,
+) -> Result<SignUp, String> {
     let username = form_data.username.unwrap_or_default();
     if username.len() < 4 {
         return Err("Username is too short, at least 4".into());
     }
 
     let email = form_data.email.unwrap_or_default();
-    if !EMAIL_REGEX.is_match(email.as_str()) {
+    if !state.is_email(&email) {
         return Err("You need to provide an email address".into());
     }
 

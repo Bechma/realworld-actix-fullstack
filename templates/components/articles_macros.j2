@@ -3,7 +3,7 @@
 {% macro preview(article) %}
 <div class="article-preview">
     {{self::metadata(article=article, is_preview=true)}}
-    <a href="{{routes['article'] ~ '/' ~ article.slug}}" class="preview-link">
+    <a href="{{routes.article ~ '/' ~ article.slug}}" class="preview-link">
         <h1>{{article.title}}</h1>
         <p>{{article.description}}</p>
         <span class="btn">Read more...</span> {%if article.tags != "" %}
@@ -20,17 +20,17 @@
 
 {% macro metadata(article, is_preview) %}
 <div class="article-meta">
-    <a href="{{routes['profile'] ~ '/' ~ article.author.username}}"><img src="{{article.author.image}}" /></a>
+    <a href="{{routes.profile ~ '/' ~ article.author.username}}"><img src="{{article.author.image}}" /></a>
     <div class="info">
-        <a href="{{routes['profile'] ~ '/' ~ article.author.username}}" class="author">{{article.author.username}}</a>
+        <a href="{{routes.profile ~ '/' ~ article.author.username}}" class="author">{{article.author.username}}</a>
         <span class="date">{{article.created_at}}</span>
     </div>
     {% if is_preview %}
     {{buttons::fav(article=article)}}
     {% elif username and username == article.author.username %}
-    <a class="btn btn-sm btn-outline-secondary" href="{{routes['editor'] ~ '/' ~ article.slug}}"><i
+    <a class="btn btn-sm btn-outline-secondary" href="{{routes.editor ~ '/' ~ article.slug}}"><i
             class="ion-compose"></i> Edit article</a>
-    <form method="post" action="{{routes['article'] ~ '/' ~ article.slug ~ '/delete'}}" style="display: inline-block;">
+    <form method="post" action="{{routes.article ~ '/' ~ article.slug ~ '/delete'}}" style="display: inline-block;">
         <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="ion-trash-a"></i> Delete
             article</button>
     </form>

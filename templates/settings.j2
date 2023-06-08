@@ -10,7 +10,7 @@ Profile settings
             <div class="col-md-6 offset-md-3 col-xs-12">
                 <h1 class="text-xs-center">Your Settings</h1>
 
-                <form action="{{routes['settings']}}" method="post" name="form_data">
+                <form action="{{routes.settings}}" method="post" name="form_data">
                     <fieldset>
                         <fieldset class="form-group">
                             <input name="image" value="{{user.image}}" class="form-control" type="text"
@@ -38,7 +38,7 @@ Profile settings
                     </fieldset>
                 </form>
                 <hr />
-                <form action="{{routes['logout']}}" method="post">
+                <form action="{{routes.logout}}" method="post">
                     <button type="submit" class="btn btn-outline-danger">Or click here to logout.</button>
                 </form>
             </div>
