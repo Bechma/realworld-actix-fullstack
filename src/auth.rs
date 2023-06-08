@@ -5,17 +5,14 @@ use crate::routing::ROUTES;
 const AUTHOR_NAME: &str = "name";
 
 pub fn redirect_to_profile(session: &actix_session::Session) -> Option<HttpResponse> {
-    if let Some(name) = get_session_username(session) {
-        return Some(
-            HttpResponse::build(StatusCode::FOUND)
-                .insert_header((
-                    actix_web::http::header::LOCATION,
-                    format!("{}/{}", ROUTES["profile"], name),
-                ))
-                .finish(),
-        );
-    }
-    None
+    get_session_username(session).map(|name| {
+        HttpResponse::build(StatusCode::FOUND)
+            .insert_header((
+                actix_web::http::header::LOCATION,
+                format!("{}/{}", ROUTES["profile"], name),
+            ))
+            .finish()
+    })
 }
 
 pub fn set_cookie_param(
@@ -26,8 +23,5 @@ pub fn set_cookie_param(
 }
 
 pub fn get_session_username(session: &actix_session::Session) -> Option<String> {
-    if let Ok(x) = session.get(AUTHOR_NAME) {
-        return x;
-    }
-    None
+    session.get(AUTHOR_NAME).unwrap_or_default()
 }

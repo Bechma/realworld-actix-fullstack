@@ -46,13 +46,7 @@ async fn actix_web(
         })
         .map_err(|x| anyhow::anyhow!("tera instance couldn't initialize due to: {:?}", x))?;
 
-    let session_key = actix_web::cookie::Key::from(
-        (0..secret.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&secret[i..i + 2], 16).unwrap())
-            .collect::<Vec<u8>>()
-            .as_slice(),
-    );
+    let session_key = actix_web::cookie::Key::from(secret.as_bytes());
 
     let config = move |cfg: &mut ServiceConfig| {
         cfg.service(
