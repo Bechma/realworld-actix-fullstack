@@ -1,5 +1,5 @@
 use super::db_models::{ArticlePreview, User};
-use actix_web::{web, Responder};
+use actix_web::web;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -23,12 +23,12 @@ pub async fn index(
     query_params: web::Query<QueryInfo>,
     pool: web::Data<sqlx::PgPool>,
     state: web::Data<crate::state::AppState>,
-) -> impl Responder {
-    let mut conn = pool.acquire().await.unwrap();
+) -> super::ConduitResponse {
+    let mut conn = pool.acquire().await?;
 
-    let page = query_params.page.unwrap_or(1).saturating_sub(1) as i64;
+    let page = i64::from(query_params.page.unwrap_or(1).saturating_sub(1));
     let username = crate::utils::get_session_username(&session);
-    let amount = query_params.amount.unwrap_or(10) as i64;
+    let amount = i64::from(query_params.amount.unwrap_or(10));
 
     let articles = sqlx::query!(
         "
@@ -77,14 +77,12 @@ LIMIT $1 OFFSET $2",
         tags: x.tag_list.unwrap_or_default(),
     })
     .fetch_all(&mut conn)
-    .await
-    .unwrap();
+    .await?;
 
     let tags: Vec<String> = sqlx::query!("SELECT DISTINCT tag FROM ArticleTags")
         .map(|x| x.tag)
         .fetch_all(&mut conn)
-        .await
-        .unwrap();
+        .await?;
 
     let mut context = tera::Context::new();
     context.insert("tags", &tags);
@@ -98,7 +96,5 @@ LIMIT $1 OFFSET $2",
             myfeed: query_params.myfeed.unwrap_or_default(),
         },
     );
-    state
-        .render_template("index.j2", session, &mut context)
-        .unwrap()
+    state.render_template("index.j2", &session, &mut context)
 }

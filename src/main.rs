@@ -1,13 +1,15 @@
+#![deny(clippy::unwrap_used, clippy::pedantic)]
+#![allow(clippy::unused_async, clippy::module_name_repetitions)]
 use crate::state::AppStateStruct;
 use actix_web::middleware::Logger;
 
+mod errors;
 mod routing;
 mod state;
 mod utils;
 use sqlx::Executor;
 
 use actix_web::web::ServiceConfig;
-use anyhow::Context;
 use shuttle_actix_web::ShuttleActixWeb;
 
 #[shuttle_runtime::main]
@@ -18,26 +20,26 @@ async fn actix_web(
 ) -> ShuttleActixWeb<impl FnOnce(&mut ServiceConfig) + Send + Clone + 'static> {
     pool.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
         .await
-        .context("cannot create required extension")?;
+        .expect("cannot create required extension");
 
     sqlx::migrate!()
         .run(&pool)
         .await
-        .context("cannot generate migrations")?;
+        .expect("cannot generate migrations");
 
     let secret = secret_store
         .get("COOKIE_SECRET")
-        .context("secret was not found")?;
+        .expect("secret was not found");
 
     let state = std::sync::Arc::new(AppStateStruct::new({
         let mut tera = tera::Tera::new(
             &(static_folder
                 .to_str()
-                .context("cannot get static folder")?
+                .expect("cannot get static folder")
                 .to_string()
                 + "/**/*"),
         )
-        .context("Parsing error while loading template folder")?;
+        .expect("Parsing error while loading template folder");
         tera.autoescape_on(vec!["j2"]);
         tera
     }));

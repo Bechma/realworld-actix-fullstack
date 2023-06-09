@@ -2,7 +2,6 @@ use actix_web::{
     http::{header::ContentType, StatusCode},
     HttpResponse,
 };
-use anyhow::Context;
 
 pub type AppState = std::sync::Arc<AppStateStruct>;
 
@@ -24,21 +23,18 @@ impl AppStateStruct {
     pub fn render_template(
         &self,
         template: &str,
-        session: actix_session::Session,
+        session: &actix_session::Session,
         context: &mut tera::Context,
-    ) -> anyhow::Result<HttpResponse> {
+    ) -> Result<HttpResponse, crate::errors::ConduitError> {
         let current = template.replace(".j2", "");
         if !context.contains_key("current") {
             context.insert("current", &current);
         }
         context.insert("routes", &self.routes);
-        if let Some(username) = crate::utils::get_session_username(&session) {
+        if let Some(username) = crate::utils::get_session_username(session) {
             context.insert("username", &username);
         }
-        let body = self
-            .templates
-            .render(template, context)
-            .context("problem while rendering a template")?;
+        let body = self.templates.render(template, context)?;
         Ok(HttpResponse::build(StatusCode::OK)
             .content_type(ContentType::html())
             .body(body))
@@ -48,7 +44,7 @@ impl AppStateStruct {
         self.routes.redirect_to_profile(session)
     }
 
-    pub(crate) fn route_from_enum(&self, value: crate::routing::RoutesEnum) -> String {
+    pub(crate) fn route_from_enum(&self, value: &crate::routing::RoutesEnum) -> String {
         self.routes.enum_to_string(value)
     }
 

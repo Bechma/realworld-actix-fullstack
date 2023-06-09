@@ -1,6 +1,7 @@
 use self::article::{article, article_add_favorite, article_del_favorite, article_delete};
 use self::comments::{comments_create, comments_delete};
 use self::editor::{editor_get, editor_post};
+use self::error::error_handler;
 use self::index::index;
 use self::login::{login_get, login_post};
 use self::logout::logout;
@@ -13,12 +14,16 @@ mod article;
 mod comments;
 mod db_models;
 mod editor;
+mod error;
 mod index;
 mod login;
 mod logout;
 mod profile;
 mod register;
 mod settings;
+
+pub type ConduitResponse = Result<actix_web::HttpResponse, crate::errors::ConduitError>;
+
 #[derive(serde::Deserialize, serde::Serialize, Clone)]
 pub struct Routes {
     index: String,
@@ -29,6 +34,7 @@ pub struct Routes {
     editor: String,
     article: String,
     profile: String,
+    error: String,
 }
 
 pub(crate) enum RoutesEnum {
@@ -40,6 +46,7 @@ pub(crate) enum RoutesEnum {
     // Editor,
     Article,
     Profile,
+    // Error,
 }
 
 impl Routes {
@@ -53,10 +60,11 @@ impl Routes {
             editor: "/editor".to_string(),
             article: "/article".to_string(),
             profile: "/profile".to_string(),
+            error: "/error".to_string(),
         }
     }
 
-    pub(crate) fn enum_to_string(&self, value: RoutesEnum) -> String {
+    pub(crate) fn enum_to_string(&self, value: &RoutesEnum) -> String {
         match value {
             RoutesEnum::Index => self.index.to_string(),
             // RoutesEnum::Logout => self.logout.to_string(),
@@ -116,81 +124,8 @@ impl Routes {
                 .route(&editor_slug, web::post().to(editor_post))
                 .route(&profile_user, web::get().to(user_profile))
                 .route(&user_follow, web::post().to(follower_up))
-                .route(&user_unfollow, web::post().to(follower_down));
+                .route(&user_unfollow, web::post().to(follower_down))
+                .route(&s.error, web::get().to(error_handler));
         }
     }
 }
-
-/*
-lazy_static::lazy_static!(
-    pub static ref ROUTES: HashMap<String, String> = {
-        let mut hm = HashMap::new();
-        hm.insert("index", "/");
-        hm.insert("logout", "/logout");
-        hm.insert("login", "/login");
-        hm.insert("register", "/register");
-        hm.insert("settings", "/settings");
-        hm.insert("editor", "/editor");
-        hm.insert("article", "/article");
-        hm.insert("profile", "/profile");
-        hm.iter().map(|(x, y)| (x.to_string(), y.to_string())).collect()
-    };
-);
-
-pub fn apply_routes(cfg: &mut web::ServiceConfig) {
-    cfg.route(&ROUTES["index"], web::get().to(index))
-        .route(
-            &(ROUTES["article"].to_string() + "/{slug}"),
-            web::get().to(article),
-        )
-        .route(
-            &(ROUTES["article"].to_string() + "/{slug}/delete"),
-            web::post().to(article_delete),
-        )
-        .route(
-            &(ROUTES["article"].to_string() + "/{slug}/comments"),
-            web::post().to(comments_create),
-        )
-        .route(
-            &(ROUTES["article"].to_string() + "/{slug}/comments/{id}"),
-            web::post().to(comments_delete),
-        )
-        .route(
-            &(ROUTES["article"].to_string() + "/{slug}/fav"),
-            web::post().to(article_add_favorite),
-        )
-        .route(
-            &(ROUTES["article"].to_string() + "/{slug}/unfav"),
-            web::post().to(article_del_favorite),
-        )
-        .route(&ROUTES["logout"], web::post().to(logout))
-        .route(&ROUTES["login"], web::get().to(login_get))
-        .route(&ROUTES["login"], web::post().to(login_post))
-        .route(&ROUTES["register"], web::get().to(register_get))
-        .route(&ROUTES["register"], web::post().to(register_post))
-        .route(&ROUTES["settings"], web::get().to(settings_get))
-        .route(&ROUTES["settings"], web::post().to(settings_post))
-        .route(&ROUTES["editor"], web::get().to(editor_get))
-        .route(
-            &(ROUTES["editor"].to_string() + "/{slug}"),
-            web::get().to(editor_get),
-        )
-        .route(&ROUTES["editor"], web::post().to(editor_post))
-        .route(
-            &(ROUTES["editor"].to_string() + "/{slug}"),
-            web::post().to(editor_post),
-        )
-        .route(
-            &(ROUTES["profile"].to_string() + "/{username}"),
-            web::get().to(user_profile),
-        )
-        .route(
-            &(ROUTES["profile"].to_string() + "/{username}/follow"),
-            web::post().to(follower_up),
-        )
-        .route(
-            &(ROUTES["profile"].to_string() + "/{username}/unfollow"),
-            web::post().to(follower_down),
-        );
-}
-*/

@@ -1,7 +1,7 @@
 use super::db_models::{ArticlePreview, User};
 use actix_web::http::StatusCode;
 use actix_web::web::Data;
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -20,8 +20,8 @@ pub async fn user_profile(
     query_params: web::Query<QueryInfo>,
     pool: web::Data<sqlx::PgPool>,
     state: Data<crate::state::AppState>,
-) -> impl Responder {
-    let mut conn = pool.acquire().await.unwrap();
+) -> super::ConduitResponse {
+    let mut conn = pool.acquire().await?;
     let logged_user = crate::utils::get_session_username(&session).unwrap_or_default();
 
     let Some(user) = sqlx::query!(
@@ -30,9 +30,8 @@ pub async fn user_profile(
         logged_user.clone(),
     ).map(|x| User{ username: x.username, email: x.email, bio: x.bio, image: x.image, following: x.following.unwrap_or_default() })
     .fetch_optional(&mut conn)
-    .await
-    .unwrap() else {
-        return HttpResponse::NotFound().finish();
+    .await? else {
+        return Ok(HttpResponse::NotFound().finish());
     };
 
     let favourites = query_params.favourites.is_some();
@@ -75,8 +74,7 @@ FROM Articles as a
             },
         })
         .fetch_all(&mut conn)
-        .await
-        .unwrap()
+        .await?
     } else {
         sqlx::query!(
             "
@@ -111,27 +109,19 @@ WHERE a.author = $1",
             },
         })
         .fetch_all(&mut conn)
-        .await
-        .unwrap()
+        .await?
     };
 
     let mut context = tera::Context::new();
     context.insert(
         "current",
-        format!(
-            "{}/{}",
-            state.route_from_enum(super::RoutesEnum::Profile),
-            path_params.username
-        )
-        .as_str(),
+        &(state.route_from_enum(&super::RoutesEnum::Profile) + "/" + &path_params.username),
     );
     context.insert("user", &user);
     context.insert("articles", &articles);
     context.insert("favourites", &query_params.favourites.is_some());
 
-    state
-        .render_template("profile.j2", session, &mut context)
-        .unwrap()
+    state.render_template("profile.j2", &session, &mut context)
 }
 
 pub async fn follower_up(
@@ -140,33 +130,34 @@ pub async fn follower_up(
     request: actix_web::HttpRequest,
     pool: web::Data<sqlx::PgPool>,
     state: Data<crate::state::AppState>,
-) -> impl Responder {
+) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let mut conn = pool.acquire().await.unwrap();
+        let mut conn = pool.acquire().await?;
         sqlx::query!(
             "INSERT INTO Follows(follower, influencer) VALUES ($1, $2) ON CONFLICT DO NOTHING",
             username,
             path_params.username,
         )
         .execute(&mut conn)
-        .await
-        .unwrap();
+        .await?;
     }
 
-    HttpResponse::build(StatusCode::FOUND)
+    Ok(HttpResponse::build(StatusCode::FOUND)
         .insert_header((
             actix_web::http::header::LOCATION,
             request
                 .headers()
                 .get(actix_web::http::header::REFERER)
-                .map(|x| x.to_str().unwrap().to_string())
-                .unwrap_or_else(|| {
-                    state.route_from_enum(super::RoutesEnum::Profile)
-                        + "/"
-                        + path_params.username.as_str()
-                }),
+                .map_or_else(
+                    || {
+                        state.route_from_enum(&super::RoutesEnum::Profile)
+                            + "/"
+                            + path_params.username.as_str()
+                    },
+                    |x| x.to_str().unwrap_or_default().to_string(),
+                ),
         ))
-        .finish()
+        .finish())
 }
 
 pub async fn follower_down(
@@ -175,31 +166,32 @@ pub async fn follower_down(
     request: actix_web::HttpRequest,
     pool: web::Data<sqlx::PgPool>,
     state: Data<crate::state::AppState>,
-) -> impl Responder {
+) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let mut conn = pool.acquire().await.unwrap();
+        let mut conn = pool.acquire().await?;
         sqlx::query!(
             "DELETE FROM Follows WHERE follower=$1 and influencer=$2",
             username,
             path_params.username,
         )
         .execute(&mut conn)
-        .await
-        .unwrap();
+        .await?;
     }
 
-    HttpResponse::build(StatusCode::FOUND)
+    Ok(HttpResponse::build(StatusCode::FOUND)
         .insert_header((
             actix_web::http::header::LOCATION,
             request
                 .headers()
                 .get(actix_web::http::header::REFERER)
-                .map(|x| x.to_str().unwrap().to_string())
-                .unwrap_or_else(|| {
-                    state.route_from_enum(super::RoutesEnum::Profile)
-                        + "/"
-                        + path_params.username.as_str()
-                }),
+                .map_or_else(
+                    || {
+                        state.route_from_enum(&super::RoutesEnum::Profile)
+                            + "/"
+                            + path_params.username.as_str()
+                    },
+                    |x| x.to_str().unwrap_or_default().to_string(),
+                ),
         ))
-        .finish()
+        .finish())
 }

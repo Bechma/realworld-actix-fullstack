@@ -1,5 +1,5 @@
 use actix_web::http::{header, StatusCode};
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 
 use super::db_models::User;
@@ -8,9 +8,9 @@ pub async fn settings_get(
     session: actix_session::Session,
     pool: web::Data<sqlx::PgPool>,
     state: web::Data<crate::state::AppState>,
-) -> impl Responder {
+) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let mut conn = pool.acquire().await.unwrap();
+        let mut conn = pool.acquire().await?;
         let user = sqlx::query!(
             "SELECT username, email, bio, image FROM Users WHERE username=$1",
             username
@@ -23,21 +23,18 @@ pub async fn settings_get(
             following: false,
         })
         .fetch_one(&mut conn)
-        .await
-        .unwrap();
+        .await?;
 
         let mut context = tera::Context::new();
         context.insert("user", &user);
-        return state
-            .render_template("settings.j2", session, &mut context)
-            .unwrap();
+        return state.render_template("settings.j2", &session, &mut context);
     }
-    HttpResponse::Found()
+    Ok(HttpResponse::Found()
         .append_header((
             header::LOCATION,
-            state.route_from_enum(super::RoutesEnum::Login),
+            state.route_from_enum(&super::RoutesEnum::Login),
         ))
-        .finish()
+        .finish())
 }
 
 #[derive(Deserialize)]
@@ -55,9 +52,11 @@ pub async fn settings_post(
     form_data: web::Form<FormData>,
     pool: web::Data<sqlx::PgPool>,
     state: web::Data<crate::state::AppState>,
-) -> impl Responder {
+) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let change_password = if !form_data.password.is_empty() {
+        let change_password = if form_data.password.is_empty() {
+            false
+        } else {
             if form_data.password != form_data.confirm_password {
                 let mut context = tera::Context::new();
                 let user = User {
@@ -68,16 +67,12 @@ pub async fn settings_post(
                     following: false,
                 };
                 context.insert("user", &user);
-                return state
-                    .render_template("settings.j2", session, &mut context)
-                    .unwrap();
+                return state.render_template("settings.j2", &session, &mut context);
             }
             true
-        } else {
-            false
         };
 
-        let mut conn = pool.acquire().await.unwrap();
+        let mut conn = pool.acquire().await?;
         sqlx::query!(
             "
 UPDATE Users SET
@@ -94,14 +89,13 @@ WHERE username=$1",
             form_data.password
         )
         .execute(&mut conn)
-        .await
-        .unwrap();
+        .await?;
     }
 
-    HttpResponse::build(StatusCode::FOUND)
+    Ok(HttpResponse::build(StatusCode::FOUND)
         .append_header((
             actix_web::http::header::LOCATION,
-            state.route_from_enum(super::RoutesEnum::Index),
+            state.route_from_enum(&super::RoutesEnum::Index),
         ))
-        .finish()
+        .finish())
 }

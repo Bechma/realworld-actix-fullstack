@@ -1,4 +1,4 @@
-use actix_web::{http::StatusCode, web, HttpResponse, Responder};
+use actix_web::{http::StatusCode, web, HttpResponse};
 use serde::Deserialize;
 
 use super::db_models::{ArticleFull, Comments, User};
@@ -13,11 +13,11 @@ pub async fn article(
     path_params: web::Path<PathInfo>,
     pool: web::Data<sqlx::PgPool>,
     state: web::Data<crate::state::AppState>,
-) -> impl Responder {
-    let mut conn = pool.acquire().await.unwrap();
+) -> super::ConduitResponse {
+    let mut conn = pool.acquire().await?;
     let username = crate::utils::get_session_username(&session);
     let Ok(article) = get_article(&mut conn, &path_params.slug, username.clone().unwrap_or_default()).await else {
-        return HttpResponse::NotFound().finish();
+        return Ok(HttpResponse::NotFound().finish());
     };
     let mut context = tera::Context::new();
     context.insert("article", &article);
@@ -34,17 +34,14 @@ pub async fn article(
             following: false,
         })
         .fetch_optional(&mut conn)
-        .await
-        .unwrap();
+        .await?;
         context.insert("user", &user);
     }
-    let profile_route = state.route_from_enum(super::RoutesEnum::Profile);
+    let profile_route = state.route_from_enum(&super::RoutesEnum::Profile);
     if let Ok(comments) = get_comments(&mut conn, &path_params.slug, profile_route).await {
         context.insert("comments", &comments);
     }
-    state
-        .render_template("article.j2", session, &mut context)
-        .unwrap()
+    state.render_template("article.j2", &session, &mut context)
 }
 
 async fn get_article(
@@ -79,7 +76,7 @@ WHERE slug = $1
             .split_ascii_whitespace()
             .map(str::to_string)
             .collect::<Vec<_>>(),
-        favorites_count: x.fav_count.unwrap(),
+        favorites_count: x.fav_count.unwrap_or_default(),
         created_at: x.created_at.format("%d/%m/%Y %H:%M").to_string(),
         fav: x.fav.unwrap_or_default(),
         author: User {
@@ -124,25 +121,24 @@ pub async fn article_delete(
     path_params: web::Path<PathInfo>,
     pool: web::Data<sqlx::PgPool>,
     state: web::Data<crate::state::AppState>,
-) -> impl Responder {
+) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let mut conn = pool.acquire().await.unwrap();
+        let mut conn = pool.acquire().await?;
         sqlx::query!(
             "DELETE FROM Articles WHERE slug=$1 and author=$2",
             path_params.slug,
             username,
         )
         .execute(&mut conn)
-        .await
-        .unwrap();
+        .await?;
     }
 
-    HttpResponse::build(StatusCode::FOUND)
+    Ok(HttpResponse::build(StatusCode::FOUND)
         .insert_header((
             actix_web::http::header::LOCATION,
-            state.route_from_enum(super::RoutesEnum::Index),
+            state.route_from_enum(&super::RoutesEnum::Index),
         ))
-        .finish()
+        .finish())
 }
 
 pub async fn article_add_favorite(
@@ -151,33 +147,34 @@ pub async fn article_add_favorite(
     request: actix_web::HttpRequest,
     pool: web::Data<sqlx::PgPool>,
     state: web::Data<crate::state::AppState>,
-) -> impl Responder {
+) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let mut conn = pool.acquire().await.unwrap();
+        let mut conn = pool.acquire().await?;
         sqlx::query!(
             "INSERT INTO FavArticles(article, username) VALUES ($1, $2) ON CONFLICT DO NOTHING",
             path_params.slug,
             username,
         )
         .execute(&mut conn)
-        .await
-        .unwrap();
+        .await?;
     }
 
-    HttpResponse::build(StatusCode::FOUND)
+    Ok(HttpResponse::build(StatusCode::FOUND)
         .insert_header((
             actix_web::http::header::LOCATION,
             request
                 .headers()
                 .get(actix_web::http::header::REFERER)
-                .map(|x| x.to_str().unwrap().to_string())
-                .unwrap_or_else(|| {
-                    state.route_from_enum(super::RoutesEnum::Article)
-                        + "/"
-                        + path_params.slug.as_str()
-                }),
+                .map_or_else(
+                    || {
+                        state.route_from_enum(&super::RoutesEnum::Article)
+                            + "/"
+                            + path_params.slug.as_str()
+                    },
+                    |x| x.to_str().unwrap_or_default().to_string(),
+                ),
         ))
-        .finish()
+        .finish())
 }
 
 pub async fn article_del_favorite(
@@ -186,31 +183,32 @@ pub async fn article_del_favorite(
     request: actix_web::HttpRequest,
     pool: web::Data<sqlx::PgPool>,
     state: web::Data<crate::state::AppState>,
-) -> impl Responder {
+) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let mut conn = pool.acquire().await.unwrap();
+        let mut conn = pool.acquire().await?;
         sqlx::query!(
             "DELETE FROM FavArticles WHERE article=$1 and username=$2",
             path_params.slug,
             username,
         )
         .execute(&mut conn)
-        .await
-        .unwrap();
+        .await?;
     }
 
-    HttpResponse::build(StatusCode::FOUND)
+    Ok(HttpResponse::build(StatusCode::FOUND)
         .insert_header((
             actix_web::http::header::LOCATION,
             request
                 .headers()
                 .get(actix_web::http::header::REFERER)
-                .map(|x| x.to_str().unwrap().to_string())
-                .unwrap_or_else(|| {
-                    state.route_from_enum(super::RoutesEnum::Article)
-                        + "/"
-                        + path_params.slug.as_str()
-                }),
+                .map_or_else(
+                    || {
+                        state.route_from_enum(&super::RoutesEnum::Article)
+                            + "/"
+                            + path_params.slug.as_str()
+                    },
+                    |x| x.to_str().unwrap_or_default().to_string(),
+                ),
         ))
-        .finish()
+        .finish())
 }

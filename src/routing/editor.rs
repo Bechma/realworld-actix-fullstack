@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use actix_web::http::StatusCode;
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 use super::db_models::ArticleEdit;
@@ -16,17 +16,17 @@ pub async fn editor_get(
     path_params: web::Path<PathInfo>,
     pool: web::Data<sqlx::PgPool>,
     state: web::Data<crate::state::AppState>,
-) -> impl Responder {
+) -> super::ConduitResponse {
     if crate::utils::get_session_username(&session).is_none() {
-        return HttpResponse::build(StatusCode::FOUND)
+        return Ok(HttpResponse::build(StatusCode::FOUND)
             .insert_header((
                 actix_web::http::header::LOCATION,
-                state.route_from_enum(super::RoutesEnum::Login),
+                state.route_from_enum(&super::RoutesEnum::Login),
             ))
-            .finish();
+            .finish());
     }
     let article = if let Some(slug) = &path_params.slug {
-        let mut conn = pool.acquire().await.unwrap();
+        let mut conn = pool.acquire().await?;
         if let Some(x) = sqlx::query!(
             "
 SELECT
@@ -44,12 +44,11 @@ FROM Articles a WHERE slug = $1",
             author: x.author,
         })
         .fetch_optional(&mut conn)
-        .await
-        .unwrap()
+        .await?
         {
             x
         } else {
-            return HttpResponse::NotFound().finish();
+            return Ok(HttpResponse::NotFound().finish());
         }
     } else {
         ArticleEdit::default()
@@ -57,9 +56,7 @@ FROM Articles a WHERE slug = $1",
     let mut context = tera::Context::new();
     context.insert("slug", &article.slug);
     context.insert("article", &article);
-    state
-        .render_template("editor.j2", session, &mut context)
-        .unwrap()
+    state.render_template("editor.j2", &session, &mut context)
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -87,7 +84,7 @@ pub async fn editor_post(
     article_form: web::Form<ArticleForm>,
     pool: web::Data<sqlx::PgPool>,
     state: web::Data<crate::state::AppState>,
-) -> impl Responder {
+) -> super::ConduitResponse {
     let slug = if let Some(author) = crate::utils::get_session_username(&session) {
         let article = match validate_article(article_form.clone()) {
             Ok(x) => x,
@@ -96,9 +93,7 @@ pub async fn editor_post(
                 context.insert("slug", &path_params.slug);
                 context.insert("article", &article_form);
                 context.insert("error", &e);
-                return state
-                    .render_template("editor.j2", session, &mut context)
-                    .unwrap();
+                return state.render_template("editor.j2", &session, &mut context);
             }
         };
         match update_article(author, &path_params, &article, pool).await {
@@ -115,31 +110,29 @@ pub async fn editor_post(
                 } else {
                     context.insert("error", "Problem during creation of the article");
                 }
-                return state
-                    .render_template("editor.j2", session, &mut context)
-                    .unwrap();
+                return state.render_template("editor.j2", &session, &mut context);
             }
         }
     } else {
         // Not authenticated
-        return HttpResponse::build(StatusCode::FOUND)
+        return Ok(HttpResponse::build(StatusCode::FOUND)
             .insert_header((
                 actix_web::http::header::LOCATION,
-                state.route_from_enum(super::RoutesEnum::Index),
+                state.route_from_enum(&super::RoutesEnum::Index),
             ))
-            .finish();
+            .finish());
     };
 
-    HttpResponse::build(StatusCode::FOUND)
+    Ok(HttpResponse::build(StatusCode::FOUND)
         .append_header((
             actix_web::http::header::LOCATION,
             format!(
                 "{}/{}",
-                state.route_from_enum(super::RoutesEnum::Article),
+                state.route_from_enum(&super::RoutesEnum::Article),
                 slug
             ),
         ))
-        .finish()
+        .finish())
 }
 
 fn validate_article(article_form: ArticleForm) -> Result<ArticleUpdate, String> {

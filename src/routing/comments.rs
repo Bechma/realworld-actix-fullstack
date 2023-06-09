@@ -1,5 +1,5 @@
 use actix_web::http::StatusCode;
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -13,28 +13,28 @@ pub async fn comments_delete(
     path_params: web::Path<PathDelInfo>,
     pool: web::Data<sqlx::PgPool>,
     state: web::Data<crate::state::AppState>,
-) -> impl Responder {
-    remove_comment(session, &path_params, pool).await;
+) -> super::ConduitResponse {
+    remove_comment(session, &path_params, pool).await?;
 
-    HttpResponse::build(StatusCode::FOUND)
+    Ok(HttpResponse::build(StatusCode::FOUND)
         .insert_header((
             actix_web::http::header::LOCATION,
             format!(
                 "{}/{}",
-                state.route_from_enum(super::RoutesEnum::Article),
+                state.route_from_enum(&super::RoutesEnum::Article),
                 path_params.slug
             ),
         ))
-        .finish()
+        .finish())
 }
 
 async fn remove_comment(
     session: actix_session::Session,
     path_params: &web::Path<PathDelInfo>,
     pool: web::Data<sqlx::PgPool>,
-) -> Option<sqlx::Error> {
-    let username = crate::utils::get_session_username(&session)?;
-    let mut conn = pool.acquire().await.unwrap();
+) -> Result<u64, sqlx::Error> {
+    let Some(username) = crate::utils::get_session_username(&session) else {return Ok(0)};
+    let mut conn = pool.acquire().await?;
     sqlx::query!(
         "DELETE FROM Comments WHERE id=$1 and article=$2 and username=$3",
         path_params.id,
@@ -43,7 +43,7 @@ async fn remove_comment(
     )
     .execute(&mut conn)
     .await
-    .err()
+    .map(|x| x.rows_affected())
 }
 
 #[derive(Deserialize)]
@@ -63,7 +63,7 @@ pub async fn comments_create(
     article_form: web::Form<CommentsForm>,
     pool: web::Data<sqlx::PgPool>,
     state: web::Data<crate::state::AppState>,
-) -> impl Responder {
+) -> HttpResponse {
     let comment = create_comment(session, &path_params.slug, &article_form.body, pool)
         .await
         .map(|x| format!("#comment-{x}"))
@@ -74,7 +74,7 @@ pub async fn comments_create(
             actix_web::http::header::LOCATION,
             format!(
                 "{}/{}{}",
-                state.route_from_enum(super::RoutesEnum::Article),
+                state.route_from_enum(&super::RoutesEnum::Article),
                 path_params.slug,
                 comment
             ),
@@ -92,7 +92,7 @@ async fn create_comment(
         return None;
     }
     let username = crate::utils::get_session_username(&session)?;
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = pool.acquire().await.ok()?;
     Some(
         sqlx::query!(
             "INSERT INTO Comments(article, username, body) VALUES ($1, $2, $3) RETURNING id",
@@ -102,7 +102,7 @@ async fn create_comment(
         )
         .fetch_one(&mut conn)
         .await
-        .unwrap()
+        .ok()?
         .id,
     )
 }
