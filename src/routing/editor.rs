@@ -26,8 +26,7 @@ pub async fn editor_get(
             .finish());
     }
     let article = if let Some(slug) = &path_params.slug {
-        let mut conn = pool.acquire().await?;
-        if let Some(x) = sqlx::query!(
+        match sqlx::query!(
             "
 SELECT
     a.*,
@@ -43,12 +42,13 @@ FROM Articles a WHERE slug = $1",
             tag_list: x.tag_list.unwrap_or_default(),
             author: x.author,
         })
-        .fetch_optional(&mut conn)
+        .fetch_optional(pool.as_ref())
         .await?
         {
-            x
-        } else {
-            return Ok(HttpResponse::NotFound().finish());
+            Some(x) => x,
+            None => {
+                return Ok(HttpResponse::NotFound().finish());
+            }
         }
     } else {
         ArticleEdit::default()
@@ -183,7 +183,7 @@ async fn update_article(
             slug,
             author,
         )
-        .execute(&mut transaction)
+        .execute(transaction.as_mut())
         .await?;
         slug.to_string()
     } else {
@@ -196,12 +196,12 @@ async fn update_article(
             article.body,
             author
         )
-        .execute(&mut transaction)
+        .execute(transaction.as_mut())
         .await?;
         slug
     };
     sqlx::query!("DELETE FROM ArticleTags WHERE article=$1", slug)
-        .execute(&mut transaction)
+        .execute(transaction.as_mut())
         .await?;
     if !article.tag_list.is_empty() {
         let mut qb = sqlx::QueryBuilder::new("INSERT INTO ArticleTags(article, tag) ");
@@ -211,7 +211,7 @@ async fn update_article(
                 b.push_bind(slug.clone()).push_bind(tag);
             },
         );
-        qb.build().execute(&mut transaction).await?;
+        qb.build().execute(transaction.as_mut()).await?;
     }
 
     transaction.commit().await?;

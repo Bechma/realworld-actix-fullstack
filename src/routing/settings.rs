@@ -10,7 +10,6 @@ pub async fn settings_get(
     state: web::Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let mut conn = pool.acquire().await?;
         let user = sqlx::query!(
             "SELECT username, email, bio, image FROM Users WHERE username=$1",
             username
@@ -22,7 +21,7 @@ pub async fn settings_get(
             image: x.image,
             following: false,
         })
-        .fetch_one(&mut conn)
+        .fetch_one(pool.get_ref())
         .await?;
 
         let mut context = tera::Context::new();
@@ -72,7 +71,6 @@ pub async fn settings_post(
             true
         };
 
-        let mut conn = pool.acquire().await?;
         sqlx::query!(
             "
 UPDATE Users SET
@@ -88,7 +86,7 @@ WHERE username=$1",
             change_password,
             form_data.password
         )
-        .execute(&mut conn)
+        .execute(pool.get_ref())
         .await?;
     }
 

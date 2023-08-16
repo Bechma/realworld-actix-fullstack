@@ -28,33 +28,28 @@ pub async fn login_post(
     if let Some(x) = state.redirect_to_profile(&session) {
         return Ok(x);
     }
-    let mut transaction = pool.begin().await?;
     if !sqlx::query!(
         "SELECT username FROM Users where username=$1 and password=crypt($2, password)",
         form_data.username,
         form_data.password
     )
-    .fetch_all(&mut transaction)
+    .fetch_all(pool.as_ref())
     .await
     .unwrap_or_default()
     .is_empty()
     {
-        if transaction.commit().await.is_ok() {
-            crate::utils::set_cookie_param(&session, form_data.username.to_string());
-            return Ok(HttpResponse::build(StatusCode::FOUND)
-                .insert_header((
-                    actix_web::http::header::LOCATION,
-                    format!(
-                        "{}/{}",
-                        state.route_from_enum(&super::RoutesEnum::Profile),
-                        form_data.username
-                    ),
-                ))
-                .finish());
-        }
-        return login_template(session, true, state).await;
+        crate::utils::set_cookie_param(&session, form_data.username.to_string());
+        return Ok(HttpResponse::build(StatusCode::FOUND)
+            .insert_header((
+                actix_web::http::header::LOCATION,
+                format!(
+                    "{}/{}",
+                    state.route_from_enum(&super::RoutesEnum::Profile),
+                    form_data.username
+                ),
+            ))
+            .finish());
     }
-    transaction.rollback().await?;
     login_template(session, true, state).await
 }
 

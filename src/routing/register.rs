@@ -59,7 +59,7 @@ pub async fn register_post(
         form_data.email,
         form_data.password
     )
-    .execute(&mut transaction)
+    .execute(transaction.as_mut())
     .await
     .is_ok()
         && transaction.commit().await.is_ok()

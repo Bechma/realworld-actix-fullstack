@@ -21,7 +21,6 @@ pub async fn user_profile(
     pool: web::Data<sqlx::PgPool>,
     state: Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
-    let mut conn = pool.acquire().await?;
     let logged_user = crate::utils::get_session_username(&session).unwrap_or_default();
 
     let Some(user) = sqlx::query!(
@@ -29,7 +28,7 @@ pub async fn user_profile(
         path_params.username,
         logged_user.clone(),
     ).map(|x| User{ username: x.username, email: x.email, bio: x.bio, image: x.image, following: x.following.unwrap_or_default() })
-    .fetch_optional(&mut conn)
+    .fetch_optional(pool.as_ref())
     .await? else {
         return Ok(HttpResponse::NotFound().finish());
     };
@@ -73,7 +72,7 @@ FROM Articles as a
                 following: x.following.unwrap_or_default(),
             },
         })
-        .fetch_all(&mut conn)
+        .fetch_all(pool.as_ref())
         .await?
     } else {
         sqlx::query!(
@@ -108,7 +107,7 @@ WHERE a.author = $1",
                 following: x.following.unwrap_or_default(),
             },
         })
-        .fetch_all(&mut conn)
+        .fetch_all(pool.as_ref())
         .await?
     };
 
@@ -132,13 +131,12 @@ pub async fn follower_up(
     state: Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let mut conn = pool.acquire().await?;
         sqlx::query!(
             "INSERT INTO Follows(follower, influencer) VALUES ($1, $2) ON CONFLICT DO NOTHING",
             username,
             path_params.username,
         )
-        .execute(&mut conn)
+        .execute(pool.as_ref())
         .await?;
     }
 
@@ -168,13 +166,12 @@ pub async fn follower_down(
     state: Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let mut conn = pool.acquire().await?;
         sqlx::query!(
             "DELETE FROM Follows WHERE follower=$1 and influencer=$2",
             username,
             path_params.username,
         )
-        .execute(&mut conn)
+        .execute(pool.as_ref())
         .await?;
     }
 

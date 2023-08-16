@@ -24,8 +24,6 @@ pub async fn index(
     pool: web::Data<sqlx::PgPool>,
     state: web::Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
-    let mut conn = pool.acquire().await?;
-
     let page = i64::from(query_params.page.unwrap_or(1).saturating_sub(1));
     let username = crate::utils::get_session_username(&session);
     let amount = i64::from(query_params.amount.unwrap_or(10));
@@ -76,12 +74,12 @@ LIMIT $1 OFFSET $2",
         },
         tags: x.tag_list.unwrap_or_default(),
     })
-    .fetch_all(&mut conn)
+    .fetch_all(pool.as_ref())
     .await?;
 
     let tags: Vec<String> = sqlx::query!("SELECT DISTINCT tag FROM ArticleTags")
         .map(|x| x.tag)
-        .fetch_all(&mut conn)
+        .fetch_all(pool.as_ref())
         .await?;
 
     let mut context = tera::Context::new();

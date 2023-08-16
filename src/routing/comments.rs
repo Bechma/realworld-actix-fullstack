@@ -34,14 +34,13 @@ async fn remove_comment(
     pool: web::Data<sqlx::PgPool>,
 ) -> Result<u64, sqlx::Error> {
     let Some(username) = crate::utils::get_session_username(&session) else {return Ok(0)};
-    let mut conn = pool.acquire().await?;
     sqlx::query!(
         "DELETE FROM Comments WHERE id=$1 and article=$2 and username=$3",
         path_params.id,
         path_params.slug,
         username,
     )
-    .execute(&mut conn)
+    .execute(pool.as_ref())
     .await
     .map(|x| x.rows_affected())
 }
@@ -92,7 +91,6 @@ async fn create_comment(
         return None;
     }
     let username = crate::utils::get_session_username(&session)?;
-    let mut conn = pool.acquire().await.ok()?;
     Some(
         sqlx::query!(
             "INSERT INTO Comments(article, username, body) VALUES ($1, $2, $3) RETURNING id",
@@ -100,7 +98,7 @@ async fn create_comment(
             username,
             body,
         )
-        .fetch_one(&mut conn)
+        .fetch_one(pool.as_ref())
         .await
         .ok()?
         .id,

@@ -33,7 +33,7 @@ pub async fn article(
             image: x.image,
             following: false,
         })
-        .fetch_optional(&mut conn)
+        .fetch_optional(conn.as_mut())
         .await?;
         context.insert("user", &user);
     }
@@ -87,7 +87,7 @@ WHERE slug = $1
             following: x.following.unwrap_or_default(),
         },
     })
-    .fetch_one(conn)
+    .fetch_one(conn.as_mut())
     .await
 }
 
@@ -112,7 +112,7 @@ WHERE article=$1",
         created_at: x.created_at.format("%d/%m/%Y %H:%M").to_string(),
         user_image: x.user_image.unwrap_or_default(),
     })
-    .fetch_all(conn)
+    .fetch_all(conn.as_mut())
     .await
 }
 
@@ -123,13 +123,12 @@ pub async fn article_delete(
     state: web::Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let mut conn = pool.acquire().await?;
         sqlx::query!(
             "DELETE FROM Articles WHERE slug=$1 and author=$2",
             path_params.slug,
             username,
         )
-        .execute(&mut conn)
+        .execute(pool.as_ref())
         .await?;
     }
 
@@ -149,13 +148,12 @@ pub async fn article_add_favorite(
     state: web::Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let mut conn = pool.acquire().await?;
         sqlx::query!(
             "INSERT INTO FavArticles(article, username) VALUES ($1, $2) ON CONFLICT DO NOTHING",
             path_params.slug,
             username,
         )
-        .execute(&mut conn)
+        .execute(pool.as_ref())
         .await?;
     }
 
@@ -185,13 +183,12 @@ pub async fn article_del_favorite(
     state: web::Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
-        let mut conn = pool.acquire().await?;
         sqlx::query!(
             "DELETE FROM FavArticles WHERE article=$1 and username=$2",
             path_params.slug,
             username,
         )
-        .execute(&mut conn)
+        .execute(pool.as_ref())
         .await?;
     }
 
