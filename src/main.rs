@@ -16,7 +16,6 @@ use shuttle_actix_web::ShuttleActixWeb;
 async fn actix_web(
     #[shuttle_shared_db::Postgres] pool: sqlx::PgPool,
     #[shuttle_secrets::Secrets] secret_store: shuttle_secrets::SecretStore,
-    #[shuttle_static_folder::StaticFolder(folder = "templates")] static_folder: std::path::PathBuf,
 ) -> ShuttleActixWeb<impl FnOnce(&mut ServiceConfig) + Send + Clone + 'static> {
     pool.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
         .await
@@ -32,14 +31,8 @@ async fn actix_web(
         .expect("secret was not found");
 
     let state = std::sync::Arc::new(AppStateStruct::new({
-        let mut tera = tera::Tera::new(
-            &(static_folder
-                .to_str()
-                .expect("cannot get static folder")
-                .to_string()
-                + "/**/*"),
-        )
-        .expect("Parsing error while loading template folder");
+        let mut tera =
+            tera::Tera::new("templates/**/*").expect("Parsing error while loading template folder");
         tera.autoescape_on(vec!["j2"]);
         tera
     }));

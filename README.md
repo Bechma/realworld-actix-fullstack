@@ -10,7 +10,6 @@ It's important to have docker installed. I'm using a brand new serverless approa
 ```bash
 cargo install cargo-shuttle
 cp Secrets.toml.example Secrets.toml
-cp .env.example .env
 cargo shuttle run
 ```
 

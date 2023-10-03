@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4"
-actix-session = { version = "0.7", features = ["cookie-session"] }
+actix-session = { version = "0.8", features = ["cookie-session"] }
 sqlx = { version = "0.7", features = [
     "runtime-tokio-rustls",
     "postgres",
@@ -18,8 +18,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 regex = "1"
 
-shuttle-runtime = "0.24"
-shuttle-actix-web = "0.24"
-shuttle-shared-db = { version = "0.24", features = ["postgres"] }
-shuttle-secrets = "0.24"
-shuttle-static-folder = "0.24"
+shuttle-runtime = "0.28"
+shuttle-actix-web = "0.28"
+shuttle-shared-db = { version = "0.28", features = ["postgres"] }
+shuttle-secrets = "0.28"
