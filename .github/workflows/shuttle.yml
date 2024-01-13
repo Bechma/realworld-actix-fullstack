@@ -1,0 +1,23 @@
+name: Shuttle Deploy
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: realworld
+    steps:
+      - uses: shuttle-hq/deploy-action@main
+        with:
+          deploy-key: ${{ secrets.SHUTTLE_API_KEY }}
+          working-directory: "."
+          name: "realworld-fullstack"
+          allow-dirty: "true"
+          no-test: "true"
+          cargo-shuttle-version: "0.36.0"
+          secrets: |
+            COOKIE_SECRET = '${{ secrets.COOKIE_SECRET }}'
