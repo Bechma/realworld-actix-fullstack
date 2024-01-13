@@ -39,56 +39,49 @@ pub struct Routes {
 
 pub(crate) enum RoutesEnum {
     Index,
-    // Logout,
+    Logout,
     Login,
     Register,
-    // Settings,
-    // Editor,
+    Settings,
+    Editor,
     Article,
     Profile,
-    // Error,
+    Error,
+}
+
+impl std::fmt::Display for RoutesEnum {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                RoutesEnum::Index => "/",
+                RoutesEnum::Logout => "/logout",
+                RoutesEnum::Login => "/login",
+                RoutesEnum::Register => "/register",
+                RoutesEnum::Settings => "/settings",
+                RoutesEnum::Editor => "/editor",
+                RoutesEnum::Article => "/article",
+                RoutesEnum::Profile => "/profile",
+                RoutesEnum::Error => "/error",
+            }
+        )
+    }
 }
 
 impl Routes {
     pub fn new() -> Self {
         Self {
-            index: "/".to_string(),
-            logout: "/logout".to_string(),
-            login: "/login".to_string(),
-            register: "/register".to_string(),
-            settings: "/settings".to_string(),
-            editor: "/editor".to_string(),
-            article: "/article".to_string(),
-            profile: "/profile".to_string(),
-            error: "/error".to_string(),
+            index: RoutesEnum::Index.to_string(),
+            logout: RoutesEnum::Logout.to_string(),
+            login: RoutesEnum::Login.to_string(),
+            register: RoutesEnum::Register.to_string(),
+            settings: RoutesEnum::Settings.to_string(),
+            editor: RoutesEnum::Editor.to_string(),
+            article: RoutesEnum::Article.to_string(),
+            profile: RoutesEnum::Profile.to_string(),
+            error: RoutesEnum::Error.to_string(),
         }
-    }
-
-    pub(crate) fn enum_to_string(&self, value: &RoutesEnum) -> String {
-        match value {
-            RoutesEnum::Index => self.index.to_string(),
-            // RoutesEnum::Logout => self.logout.to_string(),
-            RoutesEnum::Login => self.login.to_string(),
-            RoutesEnum::Register => self.register.to_string(),
-            // RoutesEnum::Settings => self.settings.to_string(),
-            // RoutesEnum::Editor => self.editor.to_string(),
-            RoutesEnum::Article => self.article.to_string(),
-            RoutesEnum::Profile => self.profile.to_string(),
-        }
-    }
-
-    pub fn redirect_to_profile(
-        &self,
-        session: &actix_session::Session,
-    ) -> Option<actix_web::HttpResponse> {
-        crate::utils::get_session_username(session).map(|name| {
-            actix_web::HttpResponse::build(actix_web::http::StatusCode::FOUND)
-                .insert_header((
-                    actix_web::http::header::LOCATION,
-                    format!("{}/{}", self.profile, name),
-                ))
-                .finish()
-        })
     }
 
     pub fn apply_routes(&self) -> impl Fn(&mut web::ServiceConfig) {
@@ -128,4 +121,11 @@ impl Routes {
                 .route(&s.error, web::get().to(error_handler));
         }
     }
+}
+
+pub(super) fn redirect_to_self_profile(
+    session: &actix_session::Session,
+) -> Option<actix_web::HttpResponse> {
+    crate::utils::get_session_username(session)
+        .map(|name| crate::utils::redirect(format!("{}/{}", RoutesEnum::Profile, name)))
 }

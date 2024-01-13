@@ -1,8 +1,8 @@
-use super::db_models::{ArticlePreview, User};
-use actix_web::http::StatusCode;
 use actix_web::web::Data;
 use actix_web::{web, HttpResponse};
 use serde::Deserialize;
+
+use super::db_models::{ArticlePreview, User};
 
 #[derive(Deserialize)]
 pub struct PathInfo {
@@ -18,7 +18,7 @@ pub async fn user_profile(
     session: actix_session::Session,
     path_params: web::Path<PathInfo>,
     query_params: web::Query<QueryInfo>,
-    pool: web::Data<sqlx::PgPool>,
+    pool: Data<sqlx::PgPool>,
     state: Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
     let logged_user = crate::utils::get_session_username(&session).unwrap_or_default();
@@ -114,7 +114,7 @@ WHERE a.author = $1",
     let mut context = tera::Context::new();
     context.insert(
         "current",
-        &(state.route_from_enum(&super::RoutesEnum::Profile) + "/" + &path_params.username),
+        &(super::RoutesEnum::Profile.to_string() + "/" + &path_params.username),
     );
     context.insert("user", &user);
     context.insert("articles", &articles);
@@ -127,8 +127,7 @@ pub async fn follower_up(
     session: actix_session::Session,
     path_params: web::Path<PathInfo>,
     request: actix_web::HttpRequest,
-    pool: web::Data<sqlx::PgPool>,
-    state: Data<crate::state::AppState>,
+    pool: Data<sqlx::PgPool>,
 ) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
         sqlx::query!(
@@ -140,30 +139,14 @@ pub async fn follower_up(
         .await?;
     }
 
-    Ok(HttpResponse::build(StatusCode::FOUND)
-        .insert_header((
-            actix_web::http::header::LOCATION,
-            request
-                .headers()
-                .get(actix_web::http::header::REFERER)
-                .map_or_else(
-                    || {
-                        state.route_from_enum(&super::RoutesEnum::Profile)
-                            + "/"
-                            + path_params.username.as_str()
-                    },
-                    |x| x.to_str().unwrap_or_default().to_string(),
-                ),
-        ))
-        .finish())
+    Ok(redirect(&path_params, &request))
 }
 
 pub async fn follower_down(
     session: actix_session::Session,
     path_params: web::Path<PathInfo>,
     request: actix_web::HttpRequest,
-    pool: web::Data<sqlx::PgPool>,
-    state: Data<crate::state::AppState>,
+    pool: Data<sqlx::PgPool>,
 ) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
         sqlx::query!(
@@ -175,20 +158,17 @@ pub async fn follower_down(
         .await?;
     }
 
-    Ok(HttpResponse::build(StatusCode::FOUND)
-        .insert_header((
-            actix_web::http::header::LOCATION,
-            request
-                .headers()
-                .get(actix_web::http::header::REFERER)
-                .map_or_else(
-                    || {
-                        state.route_from_enum(&super::RoutesEnum::Profile)
-                            + "/"
-                            + path_params.username.as_str()
-                    },
-                    |x| x.to_str().unwrap_or_default().to_string(),
-                ),
-        ))
-        .finish())
+    Ok(redirect(&path_params, &request))
+}
+
+fn redirect(path_params: &web::Path<PathInfo>, request: &actix_web::HttpRequest) -> HttpResponse {
+    crate::utils::redirect(
+        request
+            .headers()
+            .get(actix_web::http::header::REFERER)
+            .map_or_else(
+                || super::RoutesEnum::Profile.to_string() + "/" + path_params.username.as_str(),
+                |x| x.to_str().unwrap_or_default().to_string(),
+            ),
+    )
 }

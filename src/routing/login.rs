@@ -1,13 +1,12 @@
-use actix_web::http::StatusCode;
+use actix_web::web;
 use actix_web::web::Data;
-use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 
 pub async fn login_get(
     session: actix_session::Session,
     state: Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
-    if let Some(x) = state.redirect_to_profile(&session) {
+    if let Some(x) = super::redirect_to_self_profile(&session) {
         return Ok(x);
     }
     login_template(session, false, state).await
@@ -25,7 +24,7 @@ pub async fn login_post(
     pool: Data<sqlx::PgPool>,
     state: Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
-    if let Some(x) = state.redirect_to_profile(&session) {
+    if let Some(x) = super::redirect_to_self_profile(&session) {
         return Ok(x);
     }
     if !sqlx::query!(
@@ -39,16 +38,11 @@ pub async fn login_post(
     .is_empty()
     {
         crate::utils::set_cookie_param(&session, form_data.username.to_string());
-        return Ok(HttpResponse::build(StatusCode::FOUND)
-            .insert_header((
-                actix_web::http::header::LOCATION,
-                format!(
-                    "{}/{}",
-                    state.route_from_enum(&super::RoutesEnum::Profile),
-                    form_data.username
-                ),
-            ))
-            .finish());
+        return Ok(crate::utils::redirect(format!(
+            "{}/{}",
+            super::RoutesEnum::Profile,
+            form_data.username
+        )));
     }
     login_template(session, true, state).await
 }

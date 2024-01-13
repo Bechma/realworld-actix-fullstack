@@ -16,7 +16,7 @@ impl AppStateStruct {
         Self {
             templates: template,
             routes: crate::routing::Routes::new(),
-            email_regex: regex::Regex::new(r"^[\w\-\.]+@([\w-]+\.)+\w{2,4}$").expect("bad regex"),
+            email_regex: regex::Regex::new(r"^[\w\-.]+@([\w-]+\.)+\w{2,4}$").expect("bad regex"),
         }
     }
 
@@ -38,14 +38,6 @@ impl AppStateStruct {
         Ok(HttpResponse::build(StatusCode::OK)
             .content_type(ContentType::html())
             .body(body))
-    }
-
-    pub fn redirect_to_profile(&self, session: &actix_session::Session) -> Option<HttpResponse> {
-        self.routes.redirect_to_profile(session)
-    }
-
-    pub(crate) fn route_from_enum(&self, value: &crate::routing::RoutesEnum) -> String {
-        self.routes.enum_to_string(value)
     }
 
     pub fn apply_routes(&self) -> impl Fn(&mut actix_web::web::ServiceConfig) {

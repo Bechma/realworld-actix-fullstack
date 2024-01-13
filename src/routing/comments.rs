@@ -1,4 +1,3 @@
-use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 
@@ -12,20 +11,14 @@ pub async fn comments_delete(
     session: actix_session::Session,
     path_params: web::Path<PathDelInfo>,
     pool: web::Data<sqlx::PgPool>,
-    state: web::Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
     remove_comment(session, &path_params, pool).await?;
 
-    Ok(HttpResponse::build(StatusCode::FOUND)
-        .insert_header((
-            actix_web::http::header::LOCATION,
-            format!(
-                "{}/{}",
-                state.route_from_enum(&super::RoutesEnum::Article),
-                path_params.slug
-            ),
-        ))
-        .finish())
+    Ok(crate::utils::redirect(format!(
+        "{}/{}",
+        super::RoutesEnum::Article,
+        path_params.slug
+    )))
 }
 
 async fn remove_comment(
@@ -33,7 +26,9 @@ async fn remove_comment(
     path_params: &web::Path<PathDelInfo>,
     pool: web::Data<sqlx::PgPool>,
 ) -> Result<u64, sqlx::Error> {
-    let Some(username) = crate::utils::get_session_username(&session) else {return Ok(0)};
+    let Some(username) = crate::utils::get_session_username(&session) else {
+        return Ok(0);
+    };
     sqlx::query!(
         "DELETE FROM Comments WHERE id=$1 and article=$2 and username=$3",
         path_params.id,
@@ -61,24 +56,18 @@ pub async fn comments_create(
     path_params: web::Path<PathCreateInfo>,
     article_form: web::Form<CommentsForm>,
     pool: web::Data<sqlx::PgPool>,
-    state: web::Data<crate::state::AppState>,
 ) -> HttpResponse {
     let comment = create_comment(session, &path_params.slug, &article_form.body, pool)
         .await
         .map(|x| format!("#comment-{x}"))
         .unwrap_or_default();
 
-    HttpResponse::build(StatusCode::FOUND)
-        .insert_header((
-            actix_web::http::header::LOCATION,
-            format!(
-                "{}/{}{}",
-                state.route_from_enum(&super::RoutesEnum::Article),
-                path_params.slug,
-                comment
-            ),
-        ))
-        .finish()
+    crate::utils::redirect(format!(
+        "{}/{}{}",
+        super::RoutesEnum::Article,
+        path_params.slug,
+        comment
+    ))
 }
 
 async fn create_comment(

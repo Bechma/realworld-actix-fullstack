@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -18,12 +17,7 @@ pub async fn editor_get(
     state: web::Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
     if crate::utils::get_session_username(&session).is_none() {
-        return Ok(HttpResponse::build(StatusCode::FOUND)
-            .insert_header((
-                actix_web::http::header::LOCATION,
-                state.route_from_enum(&super::RoutesEnum::Login),
-            ))
-            .finish());
+        return Ok(crate::utils::redirect(super::RoutesEnum::Login.to_string()));
     }
     let article = if let Some(slug) = &path_params.slug {
         match sqlx::query!(
@@ -115,24 +109,14 @@ pub async fn editor_post(
         }
     } else {
         // Not authenticated
-        return Ok(HttpResponse::build(StatusCode::FOUND)
-            .insert_header((
-                actix_web::http::header::LOCATION,
-                state.route_from_enum(&super::RoutesEnum::Index),
-            ))
-            .finish());
+        return Ok(crate::utils::redirect(super::RoutesEnum::Index.to_string()));
     };
 
-    Ok(HttpResponse::build(StatusCode::FOUND)
-        .append_header((
-            actix_web::http::header::LOCATION,
-            format!(
-                "{}/{}",
-                state.route_from_enum(&super::RoutesEnum::Article),
-                slug
-            ),
-        ))
-        .finish())
+    Ok(crate::utils::redirect(format!(
+        "{}/{}",
+        super::RoutesEnum::Article,
+        slug
+    )))
 }
 
 fn validate_article(article_form: ArticleForm) -> Result<ArticleUpdate, String> {

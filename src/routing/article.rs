@@ -1,4 +1,4 @@
-use actix_web::{http::StatusCode, web, HttpResponse};
+use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 
 use super::db_models::{ArticleFull, Comments, User};
@@ -16,7 +16,13 @@ pub async fn article(
 ) -> super::ConduitResponse {
     let mut conn = pool.acquire().await?;
     let username = crate::utils::get_session_username(&session);
-    let Ok(article) = get_article(&mut conn, &path_params.slug, username.clone().unwrap_or_default()).await else {
+    let Ok(article) = get_article(
+        &mut conn,
+        &path_params.slug,
+        username.clone().unwrap_or_default(),
+    )
+    .await
+    else {
         return Ok(HttpResponse::NotFound().finish());
     };
     let mut context = tera::Context::new();
@@ -37,7 +43,7 @@ pub async fn article(
         .await?;
         context.insert("user", &user);
     }
-    let profile_route = state.route_from_enum(&super::RoutesEnum::Profile);
+    let profile_route = super::RoutesEnum::Profile.to_string();
     if let Ok(comments) = get_comments(&mut conn, &path_params.slug, profile_route).await {
         context.insert("comments", &comments);
     }
@@ -120,7 +126,6 @@ pub async fn article_delete(
     session: actix_session::Session,
     path_params: web::Path<PathInfo>,
     pool: web::Data<sqlx::PgPool>,
-    state: web::Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
         sqlx::query!(
@@ -132,12 +137,7 @@ pub async fn article_delete(
         .await?;
     }
 
-    Ok(HttpResponse::build(StatusCode::FOUND)
-        .insert_header((
-            actix_web::http::header::LOCATION,
-            state.route_from_enum(&super::RoutesEnum::Index),
-        ))
-        .finish())
+    Ok(crate::utils::redirect(super::RoutesEnum::Index.to_string()))
 }
 
 pub async fn article_add_favorite(
@@ -145,7 +145,6 @@ pub async fn article_add_favorite(
     path_params: web::Path<PathInfo>,
     request: actix_web::HttpRequest,
     pool: web::Data<sqlx::PgPool>,
-    state: web::Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
         sqlx::query!(
@@ -157,22 +156,7 @@ pub async fn article_add_favorite(
         .await?;
     }
 
-    Ok(HttpResponse::build(StatusCode::FOUND)
-        .insert_header((
-            actix_web::http::header::LOCATION,
-            request
-                .headers()
-                .get(actix_web::http::header::REFERER)
-                .map_or_else(
-                    || {
-                        state.route_from_enum(&super::RoutesEnum::Article)
-                            + "/"
-                            + path_params.slug.as_str()
-                    },
-                    |x| x.to_str().unwrap_or_default().to_string(),
-                ),
-        ))
-        .finish())
+    Ok(redirect(&path_params, &request))
 }
 
 pub async fn article_del_favorite(
@@ -180,7 +164,6 @@ pub async fn article_del_favorite(
     path_params: web::Path<PathInfo>,
     request: actix_web::HttpRequest,
     pool: web::Data<sqlx::PgPool>,
-    state: web::Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
     if let Some(username) = crate::utils::get_session_username(&session) {
         sqlx::query!(
@@ -192,20 +175,17 @@ pub async fn article_del_favorite(
         .await?;
     }
 
-    Ok(HttpResponse::build(StatusCode::FOUND)
-        .insert_header((
-            actix_web::http::header::LOCATION,
-            request
-                .headers()
-                .get(actix_web::http::header::REFERER)
-                .map_or_else(
-                    || {
-                        state.route_from_enum(&super::RoutesEnum::Article)
-                            + "/"
-                            + path_params.slug.as_str()
-                    },
-                    |x| x.to_str().unwrap_or_default().to_string(),
-                ),
-        ))
-        .finish())
+    Ok(redirect(&path_params, &request))
+}
+
+fn redirect(path_params: &web::Path<PathInfo>, request: &actix_web::HttpRequest) -> HttpResponse {
+    crate::utils::redirect(
+        request
+            .headers()
+            .get(actix_web::http::header::REFERER)
+            .map_or_else(
+                || super::RoutesEnum::Article.to_string() + "/" + path_params.slug.as_str(),
+                |x| x.to_str().unwrap_or_default().to_string(),
+            ),
+    )
 }

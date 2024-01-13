@@ -1,13 +1,12 @@
-use actix_web::http::StatusCode;
+use actix_web::web;
 use actix_web::web::Data;
-use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 pub async fn register_get(
     session: actix_session::Session,
     state: Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
-    if let Some(x) = state.redirect_to_profile(&session) {
+    if let Some(x) = super::redirect_to_self_profile(&session) {
         return Ok(x);
     }
     let mut context = tera::Context::new();
@@ -33,7 +32,7 @@ pub async fn register_post(
     pool: Data<sqlx::PgPool>,
     state: Data<crate::state::AppState>,
 ) -> super::ConduitResponse {
-    if let Some(x) = state.redirect_to_profile(&session) {
+    if let Some(x) = super::redirect_to_self_profile(&session) {
         return Ok(x);
     }
     let form_data = match validate_form(form_data.clone(), &state) {
@@ -46,12 +45,9 @@ pub async fn register_post(
         }
     };
     let Ok(mut transaction) = pool.begin().await else {
-        return Ok(HttpResponse::build(StatusCode::FOUND)
-            .insert_header((
-                actix_web::http::header::LOCATION,
-                state.route_from_enum(&super::RoutesEnum::Register),
-            ))
-            .finish())
+        return Ok(crate::utils::redirect(
+            super::RoutesEnum::Register.to_string(),
+        ));
     };
     if sqlx::query!(
         "INSERT INTO Users(username, email, password) VALUES ($1, $2, crypt($3, gen_salt('bf')))",
@@ -65,16 +61,11 @@ pub async fn register_post(
         && transaction.commit().await.is_ok()
     {
         crate::utils::set_cookie_param(&session, form_data.username.to_string());
-        return Ok(HttpResponse::build(StatusCode::FOUND)
-            .insert_header((
-                actix_web::http::header::LOCATION,
-                format!(
-                    "{}/{}",
-                    state.route_from_enum(&super::RoutesEnum::Profile),
-                    form_data.username
-                ),
-            ))
-            .finish());
+        return Ok(crate::utils::redirect(format!(
+            "{}/{}",
+            super::RoutesEnum::Profile,
+            form_data.username
+        )));
     }
     let mut context = tera::Context::new();
     context.insert("error", "User already registered");

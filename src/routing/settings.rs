@@ -1,5 +1,4 @@
-use actix_web::http::{header, StatusCode};
-use actix_web::{web, HttpResponse};
+use actix_web::web;
 use serde::Deserialize;
 
 use super::db_models::User;
@@ -28,12 +27,7 @@ pub async fn settings_get(
         context.insert("user", &user);
         return state.render_template("settings.j2", &session, &mut context);
     }
-    Ok(HttpResponse::Found()
-        .append_header((
-            header::LOCATION,
-            state.route_from_enum(&super::RoutesEnum::Login),
-        ))
-        .finish())
+    Ok(crate::utils::redirect(super::RoutesEnum::Login.to_string()))
 }
 
 #[derive(Deserialize)]
@@ -90,10 +84,5 @@ WHERE username=$1",
         .await?;
     }
 
-    Ok(HttpResponse::build(StatusCode::FOUND)
-        .append_header((
-            actix_web::http::header::LOCATION,
-            state.route_from_enum(&super::RoutesEnum::Index),
-        ))
-        .finish())
+    Ok(crate::utils::redirect(super::RoutesEnum::Index.to_string()))
 }
