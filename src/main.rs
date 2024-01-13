@@ -7,7 +7,6 @@ mod errors;
 mod routing;
 mod state;
 mod utils;
-use sqlx::Executor;
 
 use actix_web::web::ServiceConfig;
 use shuttle_actix_web::ShuttleActixWeb;
@@ -17,10 +16,6 @@ async fn actix_web(
     #[shuttle_shared_db::Postgres] pool: sqlx::PgPool,
     #[shuttle_secrets::Secrets] secret_store: shuttle_secrets::SecretStore,
 ) -> ShuttleActixWeb<impl FnOnce(&mut ServiceConfig) + Send + Clone + 'static> {
-    pool.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
-        .await
-        .expect("cannot create required extension");
-
     sqlx::migrate!()
         .run(&pool)
         .await
