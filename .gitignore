@@ -3,3 +3,5 @@
 .vscode
 .idea
 Secrets.toml
+.shuttle*
+Secrets*.toml

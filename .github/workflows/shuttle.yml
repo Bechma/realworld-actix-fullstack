@@ -11,13 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     environment: realworld
     steps:
-      - uses: shuttle-hq/deploy-action@main
+      - uses: shuttle-hq/deploy-action@v2
         with:
-          deploy-key: ${{ secrets.SHUTTLE_API_KEY }}
-          working-directory: "."
-          name: "realworld-fullstack"
-          allow-dirty: "true"
-          no-test: "true"
-          cargo-shuttle-version: "0.36.0"
+          shuttle-api-key: ${{ secrets.SHUTTLE_API_KEY }}
+          project-id: proj_01JFB3VXMXEZGBA9A330F7STJF
+          working-directory: '.'
+          cargo-shuttle-version: '0.49.0'
+          extra-args: --no-test --allow-dirty
           secrets: |
             COOKIE_SECRET = '${{ secrets.COOKIE_SECRET }}'

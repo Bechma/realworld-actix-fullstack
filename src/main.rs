@@ -14,7 +14,7 @@ use shuttle_actix_web::ShuttleActixWeb;
 #[shuttle_runtime::main]
 async fn actix_web(
     #[shuttle_shared_db::Postgres] pool: sqlx::PgPool,
-    #[shuttle_secrets::Secrets] secret_store: shuttle_secrets::SecretStore,
+    #[shuttle_runtime::Secrets] secret_store: shuttle_runtime::SecretStore,
 ) -> ShuttleActixWeb<impl FnOnce(&mut ServiceConfig) + Send + Clone + 'static> {
     sqlx::migrate!()
         .run(&pool)
