@@ -1,6 +1,6 @@
 # Realworld with Actix + Tera + SQLx
 
-You can check it online in https://realworld-fullstack.shuttleapp.rs/
+You can check it online in https://realworld-actix-fullstack-77c9.shuttle.app/
 
 ## How to run it
 
@@ -47,7 +47,11 @@ cargo shuttle deploy --no-test
 
 ## Extra notes
 
-- I wanted to write 0 javascript, so the experience is like a MPA. Everything is written in Rust with Jinja2 style templates(Tera). Very fast, although the limitation of pure HTML is a major drawback if this is a real realworld application that needs to be maintained and extended.
+- I wanted to write 0 javascript, so the experience is like a MPA. Everything is written in Rust with Jinja2 style
+  templates(Tera). Very fast, although the limitation of pure HTML is a major drawback if this is a real realworld
+  application that needs to be maintained and extended.
 - All features are applied. However, instead of following a JWT authentication, I used session based.
-- In HTML, there's `<a>` to make get requests to other pages and `<form>` to make get or post requests. This limitation forced me to only make routes with GET and POST.
-- The tests can be expanded more, however, during compilation time SQLx makes sure that all queries are well writen and returns what we expect(so that's somewhat tested =D).
+- In HTML, there's `<a>` to make get requests to other pages and `<form>` to make get or post requests. This limitation
+  forced me to only make routes with GET and POST.
+- The tests can be expanded more, however, during compilation time SQLx makes sure that all queries are well writen and
+  returns what we expect(so that's somewhat tested =D).
