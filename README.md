@@ -1,17 +1,23 @@
 # Realworld with Actix + Tera + SQLx
 
-You can check it online in https://realworld-actix-fullstack-77c9.shuttle.app/
+You can check it online in https://realworld-actix-fullstack.onrender.com
 
 ## How to run it
 
-It's important to have docker installed. I'm using a brand new serverless approach for rust applications:
-[shuttle](https://www.shuttle.rs/). At this moment is in alpha but it looks promising:
+You need a PostgreSQL database available locally or remotely.
 
 ```bash
-cargo install cargo-shuttle
-cp Secrets.toml.example Secrets.toml
-cargo shuttle run
+docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 --name postgres postgres
+cp .env.example .env
+cargo run
 ```
+
+The application reads these environment variables:
+
+- `DATABASE_URL`
+- `COOKIE_SECRET`
+- `HOST`
+- `PORT`
 
 ## How to test it
 
@@ -24,26 +30,31 @@ cargo test
 
 ## How to deploy it
 
-1. Test the deploy locally:
+1. Build and run the container locally:
 
 ```bash
-cargo shuttle login --api-key YOUR_API_KEY_HERE
-SQLX_OFFLINE=true cargo shuttle run
+docker build -t realworld-rust-fullstack .
+docker run \
+  -p 8080:8080 \
+  -e DATABASE_URL=postgres://username:password@host.docker.internal:5432/realworld \
+  -e COOKIE_SECRET=your_long_random_secret \
+  -e HOST=0.0.0.0 \
+  -e PORT=8080 \
+  realworld-rust-fullstack
 ```
 
-2. Once everything is fine, the next step is to create the secrets:
+2. For any container platform, configure these environment variables:
 
 ```bash
-# Remember to change the secret to a random and secure hex string
-cp Secrets.toml.example Secrets.toml
+DATABASE_URL=postgres://username:password@hostname:5432/database
+COOKIE_SECRET=your_long_random_secret
+HOST=0.0.0.0
+PORT=8080
 ```
 
-3. Change the name of the project in `Shuttle.toml` and deploy it
+3. Then deploy the built image to your platform of choice.
 
-```bash
-# As the time of writting, they don't have a nice testing environment, so we can't test it during deployment
-cargo shuttle deploy --no-test
-```
+The application runs SQL migrations automatically on startup.
 
 ## Extra notes
 

@@ -27,24 +27,22 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Cannot run migrations");
 
-    let state = std::sync::Arc::new(AppStateStruct::new({
-        let mut tera =
-            tera::Tera::new("templates/**/*").expect("Parsing error while loading template folder");
-        tera.autoescape_on(vec!["j2"]);
-        tera
-    }));
-
     let session_key = actix_web::cookie::Key::from(cookie_secret.as_bytes());
 
     let bind_address = format!("{host}:{port}");
     println!("Starting server at http://{bind_address}");
 
     actix_web::HttpServer::new(move || {
-        let state = state.clone();
+        let state = std::sync::Arc::new(AppStateStruct::new({
+            let mut tera = tera::Tera::new("templates/**/*")
+                .expect("Parsing error while loading template folder");
+            tera.autoescape_on(vec!["j2"]);
+            tera
+        }));
         let conf = state.apply_routes();
         actix_web::App::new()
             .app_data(actix_web::web::Data::new(pool.clone()))
-            .app_data(actix_web::web::Data::new(state))
+            .app_data(actix_web::web::Data::new(state.clone()))
             .wrap(
                 actix_session::SessionMiddleware::builder(
                     actix_session::storage::CookieSessionStore::default(),
