@@ -1,8 +1,8 @@
 use actix_web::{
-    dev::{ServiceFactory, ServiceRequest, ServiceResponse},
     App,
+    dev::{ServiceFactory, ServiceRequest, ServiceResponse},
 };
-use sqlx::{postgres::PgPoolOptions, Executor};
+use sqlx::{Executor, postgres::PgPoolOptions};
 
 pub async fn get_test_pool() -> sqlx::PgPool {
     let p = PgPoolOptions::new()

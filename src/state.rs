@@ -1,6 +1,6 @@
 use actix_web::{
-    http::{header::ContentType, StatusCode},
     HttpResponse,
+    http::{StatusCode, header::ContentType},
 };
 
 pub type AppState = std::sync::Arc<AppStateStruct>;

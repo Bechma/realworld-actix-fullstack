@@ -1,5 +1,5 @@
 use actix_web::web::Data;
-use actix_web::{web, HttpResponse};
+use actix_web::{HttpResponse, web};
 use serde::Deserialize;
 
 use super::db_models::{ArticlePreview, User};

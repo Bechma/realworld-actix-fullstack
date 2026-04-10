@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use actix_web::{web, HttpResponse};
+use actix_web::{HttpResponse, web};
 use serde::{Deserialize, Serialize};
 
 use super::db_models::ArticleEdit;

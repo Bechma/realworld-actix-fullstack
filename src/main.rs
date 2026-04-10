@@ -1,6 +1,7 @@
 #![deny(clippy::unwrap_used, clippy::pedantic)]
 #![allow(clippy::unused_async, clippy::module_name_repetitions)]
 use crate::state::AppStateStruct;
+use actix_web::HttpResponse;
 use actix_web::middleware::Logger;
 use std::env;
 
@@ -8,6 +9,13 @@ mod errors;
 mod routing;
 mod state;
 mod utils;
+
+#[actix_web::get("/assets/main.css")]
+async fn main_css() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("text/css")
+        .body(include_str!("main.css"))
+}
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -53,6 +61,7 @@ async fn main() -> std::io::Result<()> {
                 .build(),
             )
             .wrap(Logger::default())
+            .service(main_css)
             .configure(conf)
     })
     .bind(&bind_address)?

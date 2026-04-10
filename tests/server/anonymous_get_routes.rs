@@ -1,7 +1,7 @@
 use crate::helper::create_server;
 use actix_web::{
     dev::{Service, ServiceResponse},
-    http::{header, Method, StatusCode},
+    http::{Method, StatusCode, header},
     test,
 };
 
