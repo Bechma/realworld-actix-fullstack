@@ -1,6 +1,0 @@
-name = "realworld-actix-fullstack"
-
-[build]
-assets = [
-    "templates/*",
-]

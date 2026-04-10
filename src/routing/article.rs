@@ -111,7 +111,7 @@ WHERE article=$1",
     )
     .map(|x| Comments {
         id: x.id,
-        user_link: profile_route.to_string() + "/" + x.username.as_str(),
+        user_link: profile_route.clone() + "/" + x.username.as_str(),
         article: x.article,
         username: x.username,
         body: x.body,

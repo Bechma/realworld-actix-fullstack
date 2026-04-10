@@ -100,7 +100,7 @@ WHERE a.author = $1",
             favorites_count: x.favorites_count,
             tags: x.tag_list.unwrap_or_default(),
             author: User {
-                username: user.username.to_string(),
+                username: user.username.clone(),
                 email: String::default(),
                 bio: None,
                 image: user.image.clone(),

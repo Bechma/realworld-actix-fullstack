@@ -169,7 +169,7 @@ async fn update_article(
         )
         .execute(transaction.as_mut())
         .await?;
-        slug.to_string()
+        slug.clone()
     } else {
         let slug = article.title.to_lowercase().replace(' ', "-");
         sqlx::query!(

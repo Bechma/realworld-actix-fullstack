@@ -60,7 +60,7 @@ pub async fn register_post(
     .is_ok()
         && transaction.commit().await.is_ok()
     {
-        crate::utils::set_cookie_param(&session, form_data.username.to_string());
+        crate::utils::set_cookie_param(&session, form_data.username.clone());
         return Ok(crate::utils::redirect(format!(
             "{}/{}",
             super::RoutesEnum::Profile,

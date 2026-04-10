@@ -5,7 +5,8 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4"
-actix-session = { version = "0.10", features = ["cookie-session"] }
+actix-session = { version = "0.11", features = ["cookie-session"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 sqlx = { version = "0.8", features = [
     "runtime-tokio-rustls",
     "postgres",
@@ -14,7 +15,4 @@ sqlx = { version = "0.8", features = [
 tera = "1"
 serde = { version = "1", features = ["derive"] }
 regex = "1"
-
-shuttle-runtime = "0.49.0"
-shuttle-actix-web = "0.49.0"
-shuttle-shared-db = { version = "0.49.0", features = ["postgres", "sqlx"] }
+dotenvy = "0.15"

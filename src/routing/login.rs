@@ -37,7 +37,7 @@ pub async fn login_post(
     .unwrap_or_default()
     .is_empty()
     {
-        crate::utils::set_cookie_param(&session, form_data.username.to_string());
+        crate::utils::set_cookie_param(&session, form_data.username.clone());
         return Ok(crate::utils::redirect(format!(
             "{}/{}",
             super::RoutesEnum::Profile,

@@ -87,16 +87,16 @@ impl Routes {
     pub fn apply_routes(&self) -> impl Fn(&mut web::ServiceConfig) {
         let s = self.clone();
         move |cfg: &mut web::ServiceConfig| {
-            let editor_slug = s.editor.to_string() + "/{slug}";
-            let article_slug = s.article.to_string() + "/{slug}";
-            let profile_user = s.profile.to_string() + "/{username}";
-            let article_slug_delete = article_slug.to_string() + "/delete";
-            let article_add_comment = article_slug.to_string() + "/comments";
-            let article_del_comment = article_add_comment.to_string() + "/{id}";
-            let article_fav = article_slug.to_string() + "/fav";
-            let article_unfav = article_slug.to_string() + "/unfav";
-            let user_follow = profile_user.to_string() + "/follow";
-            let user_unfollow = profile_user.to_string() + "/unfollow";
+            let editor_slug = s.editor.clone() + "/{slug}";
+            let article_slug = s.article.clone() + "/{slug}";
+            let profile_user = s.profile.clone() + "/{username}";
+            let article_slug_delete = article_slug.clone() + "/delete";
+            let article_add_comment = article_slug.clone() + "/comments";
+            let article_del_comment = article_add_comment.clone() + "/{id}";
+            let article_fav = article_slug.clone() + "/fav";
+            let article_unfav = article_slug.clone() + "/unfav";
+            let user_follow = profile_user.clone() + "/follow";
+            let user_unfollow = profile_user.clone() + "/unfollow";
             cfg.route(&s.index, web::get().to(index))
                 .route(&article_slug, web::get().to(article))
                 .route(&article_slug_delete, web::post().to(article_delete))

@@ -54,9 +54,9 @@ pub async fn settings_post(
                 let mut context = tera::Context::new();
                 let user = User {
                     username,
-                    email: form_data.email.to_string(),
-                    bio: Some(form_data.bio.to_string()),
-                    image: Some(form_data.image.to_string()),
+                    email: form_data.email.clone(),
+                    bio: Some(form_data.bio.clone()),
+                    image: Some(form_data.image.clone()),
                     following: false,
                 };
                 context.insert("user", &user);

@@ -1,0 +1,12 @@
+target/
+.idea/
+.git/
+.gitignore
+Dockerfile
+*.md
+.env
+Secrets.toml
+Shuttle.toml
+Secrets.toml.example
+.github/
+*.http
