@@ -36,7 +36,7 @@ cargo test
 docker build -t realworld-rust-fullstack .
 docker run \
   -p 8080:8080 \
-  -e DATABASE_URL=postgres://username:password@host.docker.internal:5432/realworld \
+  -e DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres \
   -e COOKIE_SECRET=your_long_random_secret \
   -e HOST=0.0.0.0 \
   -e PORT=8080 \
@@ -46,7 +46,7 @@ docker run \
 2. For any container platform, configure these environment variables:
 
 ```bash
-DATABASE_URL=postgres://username:password@hostname:5432/database
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres
 COOKIE_SECRET=your_long_random_secret
 HOST=0.0.0.0
 PORT=8080
